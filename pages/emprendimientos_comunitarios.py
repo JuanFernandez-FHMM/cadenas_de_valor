@@ -3,7 +3,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import utils as utils
 import pandas as pd
 import numpy as np
-
+import plotly.express as px
 
 
 def clean_data(tablename,secondtable, personas_csv_path):
@@ -24,7 +24,7 @@ def clean_data(tablename,secondtable, personas_csv_path):
     'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 
     'donde_conex', 'tipo_conexion', 'equipo', 
     'capacitacion', 'necesita_cap', 'forma_capacitacion',
-    'horario',
+    'horario','repeat_inicio_tipo_emprendimiento'
 ]
 
     # Normalize the main repeat_inicio entries
@@ -352,3 +352,135 @@ if not selected_df.empty:
 else:
     st.write("No hay filas seleccionadas")
 
+
+if not selected_df.empty:
+
+    localidades = px.pie(selected_df, names="localidad", title="Localidades")
+    localidades.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    localidades.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    tipo_emprendimiento = px.pie(selected_df, names="tipo_emprendimiento", title="Tipos de emprendimiento")
+    tipo_emprendimiento.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    tipo_emprendimiento.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+    selected_df["solo_o_grupo"] = selected_df["solo_o_grupo"].replace({"si": "En grupo", "no": "Individual"})
+    selected_df["emp_colab"] = selected_df["emp_colab"].replace({"si":"Sí", "no":"No"})
+    grupos = px.pie(selected_df, names="solo_o_grupo", title="Distribución de tipo de trabajo por emprendimiento (individual/grupal)")
+    grupos.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    grupos.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+    espaciodetrabajodf =selected_df.dropna(subset="esp_trabajo")
+    espaciodetrabajo =px.pie(espaciodetrabajodf, names="esp_trabajo", title="Estado de los espacios de trabajo por emprendimiento")
+    espaciodetrabajo.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    espaciodetrabajo.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+    herramientadf = selected_df.dropna(subset="herramienta")
+    herramienta = px.pie(herramientadf, names="herramienta", title="Estado de las herramientas por emprendimiento")
+    herramienta.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    herramienta.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+    maquinariaequipodf = selected_df.dropna(subset="maq_equipo")
+    maquinariaequipo=px.pie(maquinariaequipodf, names="maq_equipo", title="Estado de la maquinaria y del equipo por emprendimiento")
+    maquinariaequipo.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    maquinariaequipo.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    empleados = px.pie(selected_df, names="emp_colab", title="Porcentaje de emprendimientos que cuenta con empleados")
+    empleados.update_traces(
+        textposition='inside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    empleados.update_layout(
+        showlegend=True,
+        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    categorias = {
+    "costo_materia": "Costos de materia prima",
+    "logistica": "Logistica",
+    "acceso_cliente": "Acceso a clientes",
+    "competencia": "Competencia",
+    "otro_desafio": "Otro",
+    "precio_prod": "Precio del producto"
+}
+
+
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(tipo_emprendimiento, use_container_width=True)
+        st.plotly_chart(grupos, use_container_width=True)
+        st.plotly_chart(herramienta, use_container_width=True)
+        st.plotly_chart(empleados, use_container_width=True)
+    with col2:
+        st.plotly_chart(localidades, use_container_width=True)
+        st.plotly_chart(espaciodetrabajo, use_container_width=True)
+        st.plotly_chart(maquinariaequipo, use_container_width=True)
+else:
+    st.write("Selecciona filas para cargas las gráficas.")
