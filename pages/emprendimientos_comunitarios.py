@@ -5,21 +5,28 @@ import pandas as pd
 import numpy as np
 
 
-import pandas as pd
 
-import pandas as pd
-import numpy as np
-
-def clean_data(tablename, personas_csv_path):
+def clean_data(tablename,secondtable, personas_csv_path):
     # Load the CSV file that maps IDs to names
     personas_df = pd.read_csv(personas_csv_path)
     # Convert the CSV into a dictionary for quick lookup
-    localidades_df = pd.read_csv("data\\localidades.csv")
+    localidades_df = pd.read_csv("data/localidades.csv")
     personas_dict = dict(zip(personas_df['id'], personas_df['name']))
     localidades_dict = dict(zip(localidades_df['id'], localidades_df['name']))
     
-    flat_data = utils.start_(tablename)
-    
+    flat_data, second_table = utils.start_(tablename, secondtable)
+    if second_table:
+        secondtable_dict = dict(second_table)
+    else:
+        secondtable_dict = {}
+
+    columns_to_replace = [
+    'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 
+    'donde_conex', 'tipo_conexion', 'equipo', 
+    'capacitacion', 'necesita_cap', 'forma_capacitacion',
+    'horario',
+]
+
     # Normalize the main repeat_inicio entries
     df_inicio = pd.json_normalize(
         flat_data,
@@ -31,7 +38,7 @@ def clean_data(tablename, personas_csv_path):
             'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona'
         ],
         sep='/',
-        errors='ignore'  # Skip missing keys instead of raising an error
+        errors='ignore'
     )
     
     # Ensure all expected columns are present, even if missing in the data
@@ -42,7 +49,7 @@ def clean_data(tablename, personas_csv_path):
         '_id', 'localidad', 'persona', 'solo_o_grupo', 'grupo', 'num_personas',
         'inf', 'asp_social_comun', 'tec_com', 'fort', '_submission_time',
         'ubi', '_geolocation', 'observaciones', 'repeat_personas',
-        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona'
+        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',# 'esp_trabajo', 'herramienta','maq_equipo',
     ]
     
     # Add missing columns with default NaN values
@@ -55,25 +62,40 @@ def clean_data(tablename, personas_csv_path):
     inf_data = pd.json_normalize(df_inicio_exploded_inf['inf'], sep='/', errors='ignore')
     
     # Ensure 'inf/estado_infra' exists in the data
+    df_inicio_exploded_inf = df_inicio.explode('inf').reset_index(drop=True)
+    inf_data = pd.json_normalize(df_inicio_exploded_inf['inf'], sep='/', errors='ignore')
+    
+    # Handle the nested estado_infra structure
     if 'inf/estado_infra' in inf_data.columns:
+        # Explode the estado_infra array
         inf_data_exploded_estado = inf_data.explode('inf/estado_infra').reset_index(drop=True)
-        estado_infra = pd.json_normalize(inf_data_exploded_estado['inf/estado_infra'], sep='/', errors='ignore')
         
-        # Ensure 'esp_trabajo', 'herramienta', and 'maq_equipo' exist in estado_infra
+        # Normalize the estado_infra objects
+        estado_infra = pd.json_normalize(
+            inf_data_exploded_estado['inf/estado_infra'],
+            errors='ignore'
+        )
+        
+        # Rename the columns to remove the nested prefix
+        estado_infra.columns = estado_infra.columns.str.replace('inf/estado_infra/', '')
+        
+        # Create missing columns if they don't exist
         for col in ['esp_trabajo', 'herramienta', 'maq_equipo']:
             if col not in estado_infra.columns:
                 estado_infra[col] = np.nan
         
+        # Combine the data
         inf_combined = pd.concat([
             inf_data_exploded_estado.drop(['inf/estado_infra', 'inf/estado_infra_count'], axis=1),
             estado_infra
         ], axis=1)
     else:
-        # If 'inf/estado_infra' is missing, create empty columns for 'esp_trabajo', 'herramienta', and 'maq_equipo'
+        # If estado_infra is missing, create empty columns
         inf_combined = inf_data.copy()
         for col in ['esp_trabajo', 'herramienta', 'maq_equipo']:
             inf_combined[col] = np.nan
     
+    # Rest of the function remains the same...
     inf_combined.columns = inf_combined.columns.str.replace('inf/', '')
     df_inicio_with_inf = pd.concat([
         df_inicio_exploded_inf.drop('inf', axis=1).reset_index(drop=True),
@@ -107,19 +129,35 @@ def clean_data(tablename, personas_csv_path):
         fort_data
     ], axis=1)
     
-    # Process 'repeat_personas'
-    df_final_exploded_personas = df_final.explode('repeat_personas').reset_index(drop=True)
-    personas_data = pd.json_normalize(df_final_exploded_personas['repeat_personas'], sep='/', errors='ignore')
+    df_final_exploded_personas = df_final.copy()
+    
+    # Create a temporary DataFrame to process repeat_personas
+    temp_personas = df_final.explode('repeat_personas').reset_index()
+    personas_data = pd.json_normalize(temp_personas['repeat_personas'], sep='/', errors='ignore')
     personas_data.columns = personas_data.columns.str.replace('repeat_personas/', '')
-    df_final_with_personas = pd.concat([
-        df_final_exploded_personas.drop('repeat_personas', axis=1),
-        personas_data
-    ], axis=1)
+    
+    # Group by index to collect all persona_grupo values into lists
+    grouped_personas = personas_data.groupby(temp_personas['index']).agg({
+        'persona_grupo': lambda x: list(x) if not x.isna().all() else None,
+        'nombre': 'first',
+        'apellidos': 'first',
+        'sexo': 'first',
+        'edad': 'first'
+    }).reset_index()
+    
+    # Merge back with the main DataFrame
+    df_final_with_personas = pd.merge(
+        df_final_exploded_personas,
+        grouped_personas,
+        left_index=True,
+        right_on='index',
+        how='left'
+    ).drop('index', axis=1)
     
     # Clean column names
     df_final_with_personas.columns = df_final_with_personas.columns.str.replace('/', '_')
     
-    # Convert dates
+    # Convert dates and process geolocation (same as before)
     df_final_with_personas['_submission_time'] = pd.to_datetime(df_final_with_personas['_submission_time'])
     
     # Split geolocation
@@ -142,22 +180,44 @@ def clean_data(tablename, personas_csv_path):
     for col in numeric_cols:
         df_final_with_personas[col] = pd.to_numeric(df_final_with_personas[col], errors='coerce')
     
-    # Replace IDs with names from the CSV file
+    # Replace IDs with names
     df_final_with_personas['persona'] = df_final_with_personas['persona'].map(personas_dict).fillna(df_final_with_personas['persona'])
-    df_final_with_personas['persona_grupo'] = df_final_with_personas['persona_grupo'].map(personas_dict).fillna(df_final_with_personas['persona_grupo'])
+    # Map persona_grupo names for each item in the list
+    df_final_with_personas['persona_grupo'] = df_final_with_personas['persona_grupo'].apply(
+        lambda x: [personas_dict.get(i, i) for i in x] if isinstance(x, list) else x
+    )
     
-    # replace localidades
+    # Replace localidades
     df_final_with_personas['localidad'] = df_final_with_personas['localidad'].map(localidades_dict).fillna(df_final_with_personas['localidad'])
+    
+    # Handle 'otro' cases for persona
     df_final_with_personas['temp_nom'] = df_final_with_personas['nombre_persona'] + " " + df_final_with_personas["apellidos_persona"]
     df_final_with_personas['temp_nom'] = df_final_with_personas['temp_nom'].str.strip()
     df_final_with_personas.loc[df_final_with_personas['persona']=="otro", "persona"] = df_final_with_personas['temp_nom']
     df_final_with_personas.drop(columns=["temp_nom"], inplace=True)
 
+    # Handle 'otro' cases for persona_grupo list
     df_final_with_personas['temp_nom'] = df_final_with_personas['nombre'] + " " + df_final_with_personas["apellidos"]
     df_final_with_personas['temp_nom'] = df_final_with_personas['temp_nom'].str.strip()
-    df_final_with_personas.loc[df_final_with_personas['persona_grupo']=="otro", "persona_grupo"] = df_final_with_personas['temp_nom']
+    df_final_with_personas['persona_grupo'] = df_final_with_personas.apply(
+        lambda row: [row['temp_nom'] if x == "otro" else x for x in row['persona_grupo']]
+        if isinstance(row['persona_grupo'], list) else row['persona_grupo'],
+        axis=1
+    )
     df_final_with_personas.drop(columns=["temp_nom"], inplace=True)
-    # Select and rename key columns
+
+    def replace_values(value):
+        if isinstance(value, str):  # Ensure it's a string
+            parts = value.split(" ")  # Split by spaces
+            replaced_parts = [secondtable_dict.get(part, part) for part in parts]  # Replace each part
+            return " ".join(replaced_parts)  # Join back with spaces
+        return value  # Return unchanged if not a string
+
+    # Apply the transformation to each column
+    for col in columns_to_replace:
+        df_final_with_personas[col] = df_final_with_personas[col].apply(replace_values)
+    
+    # Rename columns and select final columns (same as before)
     df_final_with_personas.rename(columns={
         '_submission_time': 'fecha_submision',
         'repeat_inicio_nombre_emprendimiento': 'emprendimiento',
@@ -166,7 +226,6 @@ def clean_data(tablename, personas_csv_path):
         'repeat_inicio_image_prod': 'imagen_producto'
     }, inplace=True)
     
-    # Final column selection (adjust based on needs)
     final_cols = [
         'emprendimiento', 'tipo_emprendimiento', 'productos_servicios', 'imagen_producto',
         'localidad', 'persona', 'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',
@@ -177,14 +236,12 @@ def clean_data(tablename, personas_csv_path):
         'fecha_submision', 'geo_lat', 'geo_lon', 'observaciones'
     ]
     
-    # Ensure all final columns exist in the DataFrame
+    # Ensure all final columns exist
     for col in final_cols:
         if col not in df_final_with_personas.columns:
             df_final_with_personas[col] = np.nan
     
-    # Filter and return
     return df_final_with_personas[final_cols].copy()
-
 
 st.set_page_config(page_title="Emprendimientos Comunitarios Naat-Ha", page_icon=":earth_americas:", layout="wide", initial_sidebar_state="collapsed")
 
@@ -193,7 +250,7 @@ if st.button("Página principal"):
     st.switch_page("pagina_principal.py")
 
 
-df = clean_data("mapeo_emprend_comunitarios_naatha","data\\personas.csv")
+df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data","data/personas.csv")
 gb = GridOptionsBuilder.from_dataframe(df)
 gb.configure_default_column(
     groupable=True,
@@ -215,7 +272,7 @@ columns = {
     'apellidos_persona': "Apellidos de la persona",
     'sexo_persona': "Sexo de la persona",
     'edad_persona': "Edad de la persona",
-    'solo_o_grupo': "¿Trabaja solo o en grupo?",
+    'solo_o_grupo': "¿Trabaja en grupo?",
     'grupo': "Nombre del grupo",
     'num_personas': "Número de personas en el grupo",
     'persona_grupo': "Miembro del grupo",
