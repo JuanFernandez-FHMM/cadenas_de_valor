@@ -317,9 +317,9 @@ for col, header in columns.items():
 
 # Configure selection and side bar
 gb.configure_selection(
+    pre_selected_rows=[],
     selection_mode="multiple",
     use_checkbox=True,
-    pre_selected_rows=[],
     suppressRowDeselection=False
 )
 gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
@@ -364,7 +364,7 @@ if not selected_df.empty:
     localidades = px.pie(selected_df, names="localidad", title="Localidades")
     localidades.update_traces(
         textposition='inside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -379,7 +379,7 @@ if not selected_df.empty:
     tipo_emprendimiento = px.pie(selected_df, names="tipo_emprendimiento", title="Tipos de emprendimiento")
     tipo_emprendimiento.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -395,7 +395,7 @@ if not selected_df.empty:
     grupos = px.pie(selected_df, names="solo_o_grupo", title="Distribución de tipo de trabajo por emprendimiento (individual/grupal)")
     grupos.update_traces(
         textposition='inside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -410,7 +410,7 @@ if not selected_df.empty:
     espaciodetrabajo =px.pie(espaciodetrabajodf, names="esp_trabajo", title="Estado de los espacios de trabajo por emprendimiento")
     espaciodetrabajo.update_traces(
         textposition='auto',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -425,7 +425,7 @@ if not selected_df.empty:
     herramienta = px.pie(herramientadf, names="herramienta", title="Estado de las herramientas por emprendimiento")
     herramienta.update_traces(
         textposition='auto',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -440,7 +440,7 @@ if not selected_df.empty:
     maquinariaequipo=px.pie(maquinariaequipodf, names="maq_equipo", title="Estado de la maquinaria y del equipo por emprendimiento")
     maquinariaequipo.update_traces(
         textposition='auto',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -492,7 +492,7 @@ if not selected_df.empty:
     desafios_pie = px.pie(desafios_df, names="categorias", title="Desafíos que detectaron los emprendimientos")
     desafios_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -533,7 +533,7 @@ if not selected_df.empty:
     comunicacion_pie = px.pie(comunicacion_df, names=0, title="Métodos de promoción de los emprendimientos dentro de la comunidad")
     comunicacion_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -570,7 +570,7 @@ if not selected_df.empty:
     acompa_pie = px.pie(acompa_df, names=0, title="Tipos de acompañamiento que necesitan los emprendimientos")
     acompa_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -585,7 +585,7 @@ if not selected_df.empty:
     acceso_internet =px.pie(selected_df, names="acc_int", title="Porcentaje de acceso a internet en los emprendimientos")
     acceso_internet.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -625,7 +625,7 @@ if not selected_df.empty:
     conex_pie =px.pie(conex_df, names=0, title="Lugar donde se conectan a internet los representantes de los emprendimientos")
     conex_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -640,7 +640,7 @@ if not selected_df.empty:
     calidad_conexion = px.pie(calidad_conex_df, names="tipo_conexion", title="Calidad de la conexión a internet de los representantes")
     calidad_conexion.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -677,7 +677,7 @@ if not selected_df.empty:
     equipo_conex_pie =px.pie(equipo_conex_df, names=0, title="Equipo que usan para conectarse a internet")
     equipo_conex_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -692,7 +692,7 @@ if not selected_df.empty:
     capacitacion = px.pie(selected_df, names="capacitacion", title="Emprendimientos que han recibido capacitación")
     capacitacion.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -728,7 +728,7 @@ if not selected_df.empty:
     tipos_capacitacion_pie =px.pie(tipos_capacitacion_df, names=0, title="Tipos de capacitación recibida")
     tipos_capacitacion_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -743,7 +743,7 @@ if not selected_df.empty:
     donde_capacitacion = px.pie(selected_df, names="donde_capacitacion", title="Dónde se ha recibido la capacitación")
     donde_capacitacion.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -790,7 +790,7 @@ if not selected_df.empty:
     quien_cap_pie =px.pie(quien_cap_df, names=0, title="Quiénes otorgaron las capacitaciones")
     quien_cap_pie.update_traces(
         textposition='outside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -837,7 +837,7 @@ if not selected_df.empty:
     horario = px.pie(horario_df, names="horario", title="Horario preferido para las capacitaciones")
     horario.update_traces(
         textposition='auto',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
