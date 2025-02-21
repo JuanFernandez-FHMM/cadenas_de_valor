@@ -1,9 +1,7 @@
 from psycopg2.extras import DictCursor, Json
 import psycopg2
-import pandas as pd
 import re
 from streamlit import secrets
-from sqlalchemy import create_engine
 
 
 
@@ -63,15 +61,17 @@ def read_data_secondtable(secondtable):
             cur.close()
             conn.close()
 
-def start_(tablename, secondtable):
+def start_(tablename, secondtable=None):
     og_data = read_data(tablename=tablename)
 
     flat_data = [item for sublist in og_data for item in sublist]
+    if secondtable is not None:
+        data_data = read_data_secondtable(secondtable)
 
-    data_data = read_data_secondtable(secondtable)
-
-    return flat_data, data_data
-
+        return flat_data, data_data
+    else: 
+        return flat_data
+    
 def extract_type(product):
         match = re.search(r'\(([^()]*)\)$', product)  # Extract last parentheses content
         return match.group(1) if match else 'Unknown'
