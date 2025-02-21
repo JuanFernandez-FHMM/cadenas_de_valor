@@ -6,6 +6,7 @@ import numpy as np
 import plotly.express as px
 
 
+
 def clean_data(tablename,secondtable, personas_csv_path):
     # Load the CSV file that maps IDs to names
     personas_df = pd.read_csv(personas_csv_path)
@@ -24,7 +25,7 @@ def clean_data(tablename,secondtable, personas_csv_path):
     'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 
     'donde_conex', 'tipo_conexion', 'equipo', 
     'capacitacion', 'necesita_cap', 'forma_capacitacion',
-    'horario','repeat_inicio_tipo_emprendimiento'
+    'horario','repeat_inicio_tipo_emprendimiento', 'tipo_capacitacion', 'otro_tipo_capacitacion', 'donde_capacitacion', 'quien_cap',
 ]
 
     # Normalize the main repeat_inicio entries
@@ -232,7 +233,7 @@ def clean_data(tablename,secondtable, personas_csv_path):
         'solo_o_grupo', 'grupo', 'num_personas', 'persona_grupo', 'nombre', 'apellidos', 'sexo', 'edad',
         'esp_trabajo', 'herramienta', 'maq_equipo', 'acc_bas', 'acc_lu', 'emp_colab',
         'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 'donde_conex', 'tipo_conexion', 'equipo',
-        'capacitacion', 'necesita_cap', 'enque', 'forma_capacitacion', 'horario', 'desfios_nuevos',
+        'capacitacion', 'tipo_capacitacion', 'otro_tipo_capacitacion', 'donde_capacitacion', 'otro_donde_capacitacion','quien_cap', 'necesita_cap', 'enque', 'forma_capacitacion', 'horario', 'desfios_nuevos',
         'fecha_submision', 'geo_lat', 'geo_lon', 'observaciones'
     ]
     
@@ -294,6 +295,11 @@ columns = {
     'tipo_conexion': "Tipo de conexión a internet",
     'equipo': "Equipo utilizado para internet",
     'capacitacion': "¿Ha recibido capacitación?",
+    'tipo_capacitacion': "¿Qué tipo de capacitación recibió?",
+    'otro_tipo_capacitacion':"¿Qué otro tipo de capacitación?",
+    'donde_capacitacion': "¿Dónde recibió la capacitación?", 
+    'otro_donde_capacitacion': "¿En qué otro lugar recibió la capacitación?",
+    'quien_cap':"¿Quién otorgó la capacitación?",
     'necesita_cap': "¿Necesita capacitación?",
     'enque': "¿En qué necesita capacitación?",
     'forma_capacitacion': "Forma preferida de capacitación",
@@ -372,14 +378,14 @@ if not selected_df.empty:
 
     tipo_emprendimiento = px.pie(selected_df, names="tipo_emprendimiento", title="Tipos de emprendimiento")
     tipo_emprendimiento.update_traces(
-        textposition='inside',
+        textposition='outside',
         textinfo='percent+label',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
     tipo_emprendimiento.update_layout(
         showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
+        legend=dict(title="Categorías", orientation="v",yanchor='bottom', y=0.8, xanchor='right', x=1),
         title_font=dict(size=20),
         uniformtext_minsize=12,
         uniformtext_mode='hide'
@@ -403,7 +409,7 @@ if not selected_df.empty:
     espaciodetrabajodf =selected_df.dropna(subset="esp_trabajo")
     espaciodetrabajo =px.pie(espaciodetrabajodf, names="esp_trabajo", title="Estado de los espacios de trabajo por emprendimiento")
     espaciodetrabajo.update_traces(
-        textposition='inside',
+        textposition='auto',
         textinfo='percent+label',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
@@ -418,7 +424,7 @@ if not selected_df.empty:
     herramientadf = selected_df.dropna(subset="herramienta")
     herramienta = px.pie(herramientadf, names="herramienta", title="Estado de las herramientas por emprendimiento")
     herramienta.update_traces(
-        textposition='inside',
+        textposition='auto',
         textinfo='percent+label',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
@@ -433,7 +439,7 @@ if not selected_df.empty:
     maquinariaequipodf = selected_df.dropna(subset="maq_equipo")
     maquinariaequipo=px.pie(maquinariaequipodf, names="maq_equipo", title="Estado de la maquinaria y del equipo por emprendimiento")
     maquinariaequipo.update_traces(
-        textposition='inside',
+        textposition='auto',
         textinfo='percent+label',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
@@ -449,7 +455,7 @@ if not selected_df.empty:
     empleados = px.pie(selected_df, names="emp_colab", title="Porcentaje de emprendimientos que cuenta con empleados")
     empleados.update_traces(
         textposition='inside',
-        textinfo='percent+label',
+        textinfo='percent+label+value',
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
@@ -461,16 +467,410 @@ if not selected_df.empty:
         uniformtext_mode='hide'
     )
 
-    categorias = {
-    "costo_materia": "Costos de materia prima",
-    "logistica": "Logistica",
-    "acceso_cliente": "Acceso a clientes",
-    "competencia": "Competencia",
-    "otro_desafio": "Otro",
-    "precio_prod": "Precio del producto"
-}
+    categorias_desafios = [
+    "Costos de materia prima",
+    "Logistica",
+    "Acceso a clientes",
+    "Competencia",
+    "Otro",
+    "Precio del producto"
+    ]
+    
+    desafios = selected_df['desafios']
+    desafios_df = []
+    #st.write(desafios)
+
+    for i in desafios:
+        found_categories = []
+        for categoria in categorias_desafios:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        desafios_df.append(found_categories)
+    desafios_df = pd.DataFrame({'categorias': [cat for cats in desafios_df for cat in (cats if cats else [None])]})
+
+    
+    desafios_pie = px.pie(desafios_df, names="categorias", title="Desafíos que detectaron los emprendimientos")
+    desafios_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    desafios_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=0.8, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
 
 
+    categorias_comunicacion = [
+"Redes sociales",
+"Publicidad impresa",
+"Voceo",
+"De boca en boca",
+
+    ]
+    comunicacion = selected_df['comunicacion']
+    comunicacion_df = []
+
+    all_categories = []
+    for i in comunicacion:
+        found_categories = []
+        for categoria in categorias_comunicacion:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+
+    # Remove duplicates by converting to set and back to list
+    #st.write(all_categories)
+
+    #st.write(unique_categories)
+    comunicacion_df = pd.DataFrame(all_categories)
+    
+    comunicacion_pie = px.pie(comunicacion_df, names=0, title="Métodos de promoción de los emprendimientos dentro de la comunidad")
+    comunicacion_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    comunicacion_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    categorias_acompa = [
+"Capacitación",
+"Capital de trabajo",
+"Maquinaria y equipo",
+"Herramientas",
+"Espacio de trabajo",
+"Asesoría",
+
+    ]
+    acompa = selected_df['tipo_acompa']
+    acompa_df = []
+
+    all_categories = []
+    for i in acompa:
+        found_categories = []
+        for categoria in categorias_acompa:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+    acompa_df = pd.DataFrame(all_categories)
+    #st.write(acompa_df)
+    acompa_pie = px.pie(acompa_df, names=0, title="Tipos de acompañamiento que necesitan los emprendimientos")
+    acompa_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    acompa_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    acceso_internet =px.pie(selected_df, names="acc_int", title="Porcentaje de acceso a internet en los emprendimientos")
+    acceso_internet.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    acceso_internet.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    categorias_conex = [
+"Casa propia",
+"Biblioteca",
+"Comisaría",
+"Escuela",
+"Cabecera municipal",
+"Red pública (Ejemplo: CFE)",
+"Otro",
+
+
+    ]
+    conex = selected_df['donde_conex']
+    conex_df = []
+
+    all_categories = []
+    for i in conex:
+        found_categories = []
+        for categoria in categorias_conex:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+
+    conex_df = pd.DataFrame(all_categories)
+
+    conex_pie =px.pie(conex_df, names=0, title="Lugar donde se conectan a internet los representantes de los emprendimientos")
+    conex_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    conex_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+    calidad_conex_df = selected_df.dropna(subset="tipo_conexion")
+    calidad_conexion = px.pie(calidad_conex_df, names="tipo_conexion", title="Calidad de la conexión a internet de los representantes")
+    calidad_conexion.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    calidad_conexion.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    categorias_equipo_conex = [
+"Celular",
+"Computadora Escritorio",
+"Laptop",
+"Tablet",
+
+    ]
+
+    equipo_conex = selected_df['equipo']
+    equipo_conex_df = []
+
+    all_categories = []
+    for i in equipo_conex:
+        found_categories = []
+        for categoria in categorias_equipo_conex:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+
+    equipo_conex_df = pd.DataFrame(all_categories)
+
+    equipo_conex_pie =px.pie(equipo_conex_df, names=0, title="Equipo que usan para conectarse a internet")
+    equipo_conex_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    equipo_conex_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    capacitacion = px.pie(selected_df, names="capacitacion", title="Emprendimientos que han recibido capacitación")
+    capacitacion.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    capacitacion.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    categorias_capacitacion = [
+"Emprenimiento",
+"Marketing",
+"Finanzas",
+"Otro",
+    ]
+
+    tipos_capacitacion = selected_df['tipo_capacitacion']
+    tipos_capacitacion_df = []
+
+    all_categories = []
+    for i in tipos_capacitacion:
+        found_categories = []
+        for categoria in categorias_capacitacion:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+
+    tipos_capacitacion_df = pd.DataFrame(all_categories)
+    #st.dataframe(tipos_capacitacion_df )
+    tipos_capacitacion_pie =px.pie(tipos_capacitacion_df, names=0, title="Tipos de capacitación recibida")
+    tipos_capacitacion_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    tipos_capacitacion_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    donde_capacitacion = px.pie(selected_df, names="donde_capacitacion", title="Dónde se ha recibido la capacitación")
+    donde_capacitacion.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    donde_capacitacion.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+
+    categorias_quien_capa = [
+"Sembrando vida",
+"Ayuntamiento municipal",
+"DIF",
+"IYEM",
+"Misiones culturales",
+"Fundación Soriana",
+"Ko'ox Taani",
+"EDUCE",
+"El hombre sobre la tierra",
+"Heifer",
+"INPI",
+"Una ONG",
+"Un particular",
+"Otro",
+    ]
+
+    quien_cap = selected_df['quien_cap']
+    quien_cap_df = []
+
+    all_categories = []
+    for i in quien_cap:
+        found_categories = []
+        for categoria in categorias_quien_capa:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        if found_categories:  # Only append if found_categories is not empty
+            all_categories.extend(found_categories)
+
+    quien_cap_df = pd.DataFrame(all_categories)
+    #st.dataframe(tipos_capacitacion_df )
+    quien_cap_pie =px.pie(quien_cap_df, names=0, title="Quiénes otorgaron las capacitaciones")
+    quien_cap_pie.update_traces(
+        textposition='outside',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    quien_cap_pie.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    necesita_cap = px.pie(selected_df, names="necesita_cap", title="Porcentaje que considera necesitar capacitación para su emprendimiento")
+    necesita_cap.update_traces(
+        textposition='auto',
+        textinfo='percent+label+value',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    necesita_cap.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    forma_cap_df = selected_df.dropna(subset="forma_capacitacion")
+    forma_cap = px.pie(forma_cap_df, names="forma_capacitacion", title="Modalidad preferida para las capacitaciones")
+    forma_cap.update_traces(
+        textposition='auto',
+        textinfo='percent+label+value',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    forma_cap.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+    horario_df = selected_df.dropna(subset="horario")
+    horario = px.pie(horario_df, names="horario", title="Horario preferido para las capacitaciones")
+    horario.update_traces(
+        textposition='auto',
+        textinfo='percent+label',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    horario.update_layout(
+        showlegend=True,
+        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
+        title_font=dict(size=20),
+        uniformtext_minsize=12,
+        uniformtext_mode='hide'
+    )
+
+
+    geo_df = selected_df.dropna(subset=['geo_lat', 'geo_lon'])
+
+    # Create the map
+    geoplot = px.scatter_mapbox(geo_df, 
+                        lat='geo_lat', 
+                        lon='geo_lon',
+                        zoom=12,  # Starting zoom level
+                        mapbox_style='open-street-map',
+                        title= "Ubicación de los emprendimientos (aproximada)"
+                        )
+
+    # Update layout to center on the Yucatan locations
+    geoplot.update_layout(
+        mapbox=dict(
+            center=dict(
+                lat=geo_df['geo_lat'].mean(),
+                lon=geo_df['geo_lon'].mean()
+            ),
+        ),
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
 
     col1, col2 = st.columns(2)
     with col1:
@@ -478,9 +878,23 @@ if not selected_df.empty:
         st.plotly_chart(grupos, use_container_width=True)
         st.plotly_chart(herramienta, use_container_width=True)
         st.plotly_chart(empleados, use_container_width=True)
+        st.plotly_chart(comunicacion_pie, use_container_width=True)
+        st.plotly_chart(acceso_internet, use_container_width=True)
+        st.plotly_chart(equipo_conex_pie, use_container_width=True)
+        st.plotly_chart(tipos_capacitacion_pie, use_container_width=True)
+        st.plotly_chart(quien_cap_pie, use_container_width=True)
+        st.plotly_chart(forma_cap, use_container_width=True)
     with col2:
         st.plotly_chart(localidades, use_container_width=True)
         st.plotly_chart(espaciodetrabajo, use_container_width=True)
         st.plotly_chart(maquinariaequipo, use_container_width=True)
+        st.plotly_chart(desafios_pie, use_container_width=True)
+        st.plotly_chart(acompa_pie, use_container_width=True)
+        st.plotly_chart(calidad_conexion, use_container_width=True)
+        st.plotly_chart(capacitacion, use_container_width=True)
+        st.plotly_chart(donde_capacitacion, use_container_width=True)
+        st.plotly_chart(necesita_cap, use_container_width=True)
+        st.plotly_chart(horario, use_container_width=True)
+    st.plotly_chart(geoplot)
 else:
     st.write("Selecciona filas para cargas las gráficas.")
