@@ -7,13 +7,8 @@ import plotly.express as px
 import folium
 from streamlit_folium import folium_static
 
-def clean_data(tablename,secondtable, personas_csv_path):
-    # Load the CSV file that maps IDs to names
-    personas_df = pd.read_csv(personas_csv_path)
-    # Convert the CSV into a dictionary for quick lookup
-    localidades_df = pd.read_csv("data/localidades.csv")
-    personas_dict = dict(zip(personas_df['id'], personas_df['name']))
-    localidades_dict = dict(zip(localidades_df['id'], localidades_df['name']))
+def clean_data(tablename,secondtable):
+
     
     flat_data, second_table = utils.start_(tablename, secondtable)
     if second_table:
@@ -22,7 +17,7 @@ def clean_data(tablename,secondtable, personas_csv_path):
         secondtable_dict = {}
 
     columns_to_replace = [
-    'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 
+    'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 'persona', 'localidad',
     'donde_conex', 'tipo_conexion', 'equipo', 
     'capacitacion', 'necesita_cap', 'forma_capacitacion',
     'horario','repeat_inicio_tipo_emprendimiento', 'tipo_capacitacion', 'otro_tipo_capacitacion', 'donde_capacitacion', 'quien_cap',
@@ -182,14 +177,14 @@ def clean_data(tablename,secondtable, personas_csv_path):
         df_final_with_personas[col] = pd.to_numeric(df_final_with_personas[col], errors='coerce')
     
     # Replace IDs with names
-    df_final_with_personas['persona'] = df_final_with_personas['persona'].map(personas_dict).fillna(df_final_with_personas['persona'])
+    #df_final_with_personas['persona'] = df_final_with_personas['persona'].map(personas_dict).fillna(df_final_with_personas['persona'])
     # Map persona_grupo names for each item in the list
-    df_final_with_personas['persona_grupo'] = df_final_with_personas['persona_grupo'].apply(
-        lambda x: [personas_dict.get(i, i) for i in x] if isinstance(x, list) else x
-    )
+    #df_final_with_personas['persona_grupo'] = df_final_with_personas['persona_grupo'].apply(
+    #    lambda x: [personas_dict.get(i, i) for i in x] if isinstance(x, list) else x
+    #)
     
     # Replace localidades
-    df_final_with_personas['localidad'] = df_final_with_personas['localidad'].map(localidades_dict).fillna(df_final_with_personas['localidad'])
+    #df_final_with_personas['localidad'] = df_final_with_personas['localidad'].map(localidades_dict).fillna(df_final_with_personas['localidad'])
     
     # Handle 'otro' cases for persona
     df_final_with_personas['temp_nom'] = df_final_with_personas['nombre_persona'] + " " + df_final_with_personas["apellidos_persona"]
