@@ -4,8 +4,8 @@ import utils as utils
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
-
+import folium
+from streamlit_folium import folium_static
 
 def clean_data(tablename,secondtable, personas_csv_path):
     # Load the CSV file that maps IDs to names
@@ -249,7 +249,8 @@ st.set_page_config(page_title="Emprendimientos Comunitarios Naat-Ha", page_icon=
 st.title("Mapeo de emprendimientos comunitarios Naat-Ha :earth_americas:")
 if st.button("Página principal"):
     st.switch_page("pagina_principal.py")
-
+if st.button("Mapa de fichas"):
+    st.switch_page("pages/fichas_comunidades.py")
 
 df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data","data/personas.csv")
 gb = GridOptionsBuilder.from_dataframe(df)
@@ -732,13 +733,7 @@ if not selected_df.empty:
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    tipos_capacitacion_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
+
 
     donde_capacitacion = px.pie(selected_df, names="donde_capacitacion", title="Dónde se ha recibido la capacitación")
     donde_capacitacion.update_traces(
@@ -747,13 +742,7 @@ if not selected_df.empty:
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    donde_capacitacion.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
+
 
 
     categorias_quien_capa = [
@@ -794,13 +783,7 @@ if not selected_df.empty:
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    quien_cap_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
+
 
     necesita_cap = px.pie(selected_df, names="necesita_cap", title="Porcentaje que considera necesitar capacitación para su emprendimiento")
     necesita_cap.update_traces(
@@ -825,13 +808,7 @@ if not selected_df.empty:
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    forma_cap.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
+
 
     horario_df = selected_df.dropna(subset="horario")
     horario = px.pie(horario_df, names="horario", title="Horario preferido para las capacitaciones")
@@ -841,60 +818,102 @@ if not selected_df.empty:
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    horario.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
+
 
 
     geo_df = selected_df.dropna(subset=['geo_lat', 'geo_lon'])
 
-    # Create the map
-    geoplot = px.scatter_mapbox(geo_df, 
-                        lat='geo_lat', 
-                        lon='geo_lon',
-                        zoom=12,  # Starting zoom level
-                        mapbox_style='open-street-map',
-                        title= "Ubicación de los emprendimientos (aproximada)"
-                        )
+    # Calculate the center of the points
+    map_center = [geo_df['geo_lat'].mean(), geo_df['geo_lon'].mean()]
 
-    # Update layout to center on the Yucatan locations
-    geoplot.update_layout(
-        mapbox=dict(
-            center=dict(
-                lat=geo_df['geo_lat'].mean(),
-                lon=geo_df['geo_lon'].mean()
-            ),
-        ),
-        margin=dict(l=0, r=0, t=0, b=0)
-    )
+    # Create Folium map
+    m = folium.Map(location=map_center, zoom_start=12, tiles="OpenStreetMap")
+
+    # Add points with popups
+    for _, row in geo_df.iterrows():
+        # Create a small DataFrame for the popup
+        popup_df = pd.DataFrame({
+            "Nombre del emprendimiento": [row["emprendimiento"]],
+            "Tipo de emprendimiento": [row["tipo_emprendimiento"]],
+            "Persona": [row["persona"]],
+            "¿Necesita Capacitación?": [row["necesita_cap"]],
+            "¿En qué?": [row["enque"]],
+            "Modalidad preferida": [row["forma_capacitacion"]],
+            "Horario preferido": [row["horario"]]
+        })
+
+        # Convert DataFrame to an HTML table
+        html_table = popup_df.to_html(
+            classes="table table-striped table-hover table-condensed table-responsive"
+        )
+
+        # Create a folium Popup with the HTML table
+        popup = folium.Popup(html_table, max_width=800)
+
+        # Add marker with popup & tooltip
+        folium.Marker(
+            location=[row['geo_lat'], row['geo_lon']],
+            popup=popup,  # Show table on click
+            tooltip=row['emprendimiento']  # Show name on hover
+        ).add_to(m)
+
+
+
 
     col1, col2 = st.columns(2)
+    c1,c2,c3 = st.columns(3)
     with col1:
         st.plotly_chart(tipo_emprendimiento, use_container_width=True)
         st.plotly_chart(grupos, use_container_width=True)
-        st.plotly_chart(herramienta, use_container_width=True)
         st.plotly_chart(empleados, use_container_width=True)
         st.plotly_chart(comunicacion_pie, use_container_width=True)
         st.plotly_chart(acceso_internet, use_container_width=True)
-        st.plotly_chart(equipo_conex_pie, use_container_width=True)
-        st.plotly_chart(tipos_capacitacion_pie, use_container_width=True)
-        st.plotly_chart(quien_cap_pie, use_container_width=True)
-        st.plotly_chart(forma_cap, use_container_width=True)
+        
+        
+        
+        
     with col2:
         st.plotly_chart(localidades, use_container_width=True)
-        st.plotly_chart(espaciodetrabajo, use_container_width=True)
-        st.plotly_chart(maquinariaequipo, use_container_width=True)
         st.plotly_chart(desafios_pie, use_container_width=True)
         st.plotly_chart(acompa_pie, use_container_width=True)
         st.plotly_chart(calidad_conexion, use_container_width=True)
-        st.plotly_chart(capacitacion, use_container_width=True)
+        st.plotly_chart(equipo_conex_pie, use_container_width=True)
+        
+        
+
+    with c1:
+        st.plotly_chart(espaciodetrabajo, use_container_width=True)
+    with c2:
+        st.plotly_chart(herramienta, use_container_width=True)
+    with c3:
+        st.plotly_chart(maquinariaequipo, use_container_width=True)
+    
+    st.plotly_chart(capacitacion, use_container_width=True)
+
+    co1, co2, co3,  = st.columns(3)
+    with co1:
         st.plotly_chart(donde_capacitacion, use_container_width=True)
+    with co2:
+        st.plotly_chart(tipos_capacitacion_pie, use_container_width=True)
+    with co3:
+        st.plotly_chart(quien_cap_pie, use_container_width=True)
+
+    co4, co5, co6 = st.columns(3)
+    with co4:
         st.plotly_chart(necesita_cap, use_container_width=True)
+    with co5:
+        st.plotly_chart(forma_cap, use_container_width=True)
+    with co6:
         st.plotly_chart(horario, use_container_width=True)
-    st.plotly_chart(geoplot)
+
+    
+
+    folium_static(m, width=1000, height=1000)
+    
+    m.save("mapa.html")
+    with open("mapa.html", "rb") as file:
+        st.download_button(label="Descargar mapa", data=file, file_name="mapa.html", mime="text/html")
+
+
 else:
     st.write("Selecciona filas para cargas las gráficas.")

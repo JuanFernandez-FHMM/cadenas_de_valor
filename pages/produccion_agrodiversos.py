@@ -127,3 +127,8 @@ if not selected_df.empty:
 else:
     st.write("No hay filas seleccionadas")
 
+
+if not selected_df.empty:
+
+
+    col1, col2 = st.columns(2)
