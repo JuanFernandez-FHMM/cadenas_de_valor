@@ -7,21 +7,29 @@ import plotly.express as px
 import folium
 from streamlit_folium import folium_static
 
-def clean_data(tablename,secondtable):
 
+######################################################
+### SPECIFIC CLEANNING DATA FUNCTION FOR EACH PAGE ###
+######################################################
+
+def clean_data(tablename,secondtable):
     
+    # Read data using utils
     flat_data, second_table = utils.start_(tablename, secondtable)
+
+    # create table for second dict only if exists
     if second_table:
         secondtable_dict = dict(second_table)
     else:
         secondtable_dict = {}
 
+    # columns with values to be replaced with second table
     columns_to_replace = [
     'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 'persona', 'localidad',
     'donde_conex', 'tipo_conexion', 'equipo', 
     'capacitacion', 'necesita_cap', 'forma_capacitacion',
     'horario','repeat_inicio_tipo_emprendimiento', 'tipo_capacitacion', 'otro_tipo_capacitacion', 'donde_capacitacion', 'quien_cap',
-]
+    ]
 
     # Normalize the main repeat_inicio entries
     df_inicio = pd.json_normalize(
@@ -35,7 +43,7 @@ def clean_data(tablename,secondtable):
         ],
         sep='/',
         errors='ignore'
-    )
+        )
     
     # Ensure all expected columns are present, even if missing in the data
     expected_columns = [
@@ -45,7 +53,7 @@ def clean_data(tablename,secondtable):
         '_id', 'localidad', 'persona', 'solo_o_grupo', 'grupo', 'num_personas',
         'inf', 'asp_social_comun', 'tec_com', 'fort', '_submission_time',
         'ubi', '_geolocation', 'observaciones', 'repeat_personas',
-        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',# 'esp_trabajo', 'herramienta','maq_equipo',
+        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona'
     ]
     
     # Add missing columns with default NaN values
@@ -91,7 +99,7 @@ def clean_data(tablename,secondtable):
         for col in ['esp_trabajo', 'herramienta', 'maq_equipo']:
             inf_combined[col] = np.nan
     
-    # Rest of the function remains the same...
+
     inf_combined.columns = inf_combined.columns.str.replace('inf/', '')
     df_inicio_with_inf = pd.concat([
         df_inicio_exploded_inf.drop('inf', axis=1).reset_index(drop=True),
@@ -176,16 +184,6 @@ def clean_data(tablename,secondtable):
     for col in numeric_cols:
         df_final_with_personas[col] = pd.to_numeric(df_final_with_personas[col], errors='coerce')
     
-    # Replace IDs with names
-    #df_final_with_personas['persona'] = df_final_with_personas['persona'].map(personas_dict).fillna(df_final_with_personas['persona'])
-    # Map persona_grupo names for each item in the list
-    #df_final_with_personas['persona_grupo'] = df_final_with_personas['persona_grupo'].apply(
-    #    lambda x: [personas_dict.get(i, i) for i in x] if isinstance(x, list) else x
-    #)
-    
-    # Replace localidades
-    #df_final_with_personas['localidad'] = df_final_with_personas['localidad'].map(localidades_dict).fillna(df_final_with_personas['localidad'])
-    
     # Handle 'otro' cases for persona
     df_final_with_personas['temp_nom'] = df_final_with_personas['nombre_persona'] + " " + df_final_with_personas["apellidos_persona"]
     df_final_with_personas['temp_nom'] = df_final_with_personas['temp_nom'].str.strip()
@@ -200,6 +198,7 @@ def clean_data(tablename,secondtable):
         if isinstance(row['persona_grupo'], list) else row['persona_grupo'],
         axis=1
     )
+    
     df_final_with_personas.drop(columns=["temp_nom"], inplace=True)
 
     def replace_values(value):

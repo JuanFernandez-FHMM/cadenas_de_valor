@@ -4,9 +4,10 @@ import os
 
 st.set_page_config(page_title="Página principal", page_icon=":floppy_disk:", layout="wide", initial_sidebar_state="collapsed")
 
-st.markdown("## Proyectos disponibles")
+st.markdown("## Proyectos disponibles :floppy_disk:")
 st.info("Has click en una página para ver los datos.")
 st.markdown("---")
+
 # Get all files in the pages directory
 pages_dir = "pages"
 if not os.path.exists(pages_dir):
@@ -22,5 +23,3 @@ else:
             if st.button(page_name):
                 file = f"pages/{file}"
                 st.switch_page(file)
-
-
