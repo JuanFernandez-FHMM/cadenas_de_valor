@@ -270,6 +270,30 @@ def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto'):
 
     return plot
 
+def plot_tipo2_bar(dataframe, lista_categorias, columna, titulo, textposition='auto'):
+    df_temp = dataframe[columna]
+    total_responses = len(df_temp)  
+
+    df = []
+    for i in df_temp:
+        found_categories = []
+        for categoria in lista_categorias:
+            if categoria.lower() in str(i).lower():
+                found_categories.append(categoria)
+        df.extend(found_categories)
+    
+    df = pd.DataFrame({'categorias': df})
+    category_counts = df['categorias'].value_counts().reset_index()
+    category_counts.columns = ['categorias', 'count']
+    category_counts['percentage'] = (category_counts['count'] / total_responses) * 100
+
+    plot = px.bar(category_counts, color='categorias',x='categorias', y='percentage', title=titulo, text=category_counts['count'].round(1))
+    plot.update_traces(textposition=textposition)
+    plot.update_layout(yaxis_title="Porcentaje (%)", xaxis_title="Desafíos", yaxis=dict(range=[0, 100]))
+
+    return plot
+
+
 st.set_page_config(page_title="Emprendimientos Comunitarios Naat-Ha", page_icon=":earth_americas:", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Mapeo de emprendimientos comunitarios Naat-Ha :earth_americas:")
@@ -433,7 +457,7 @@ if not selected_df.empty:
 
         empleados = plot_tipo1(selected_df, "emp_colab", "Porcentaje de emprendimientos que cuenta con empleados")
 
-        desafios_pie = plot_tipo2(selected_df,[
+        desafios_bar = plot_tipo2_bar(selected_df, [
                         "Costos de materia prima",
                         "Logistica",
                         "Acceso a clientes",
@@ -444,6 +468,7 @@ if not selected_df.empty:
                         'desafios',
                         'Desafíos que detectaron los emprendimientos'
                         )
+
         
         comunicacion_pie = plot_tipo2(selected_df,[
                         "Redes sociales",
@@ -557,7 +582,7 @@ if not selected_df.empty:
         with col2:
 
             st.plotly_chart(localidades, use_container_width=True)
-            st.plotly_chart(desafios_pie, use_container_width=True)
+            st.plotly_chart(desafios_bar, use_container_width=True)
             st.plotly_chart(acompa_pie, use_container_width=True)
             st.plotly_chart(calidad_conexion, use_container_width=True)
             st.plotly_chart(equipo_conex_pie, use_container_width=True)
