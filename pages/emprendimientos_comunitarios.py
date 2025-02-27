@@ -246,7 +246,7 @@ if st.button("Página principal"):
 if st.button("Mapa de fichas"):
     st.switch_page("pages/fichas_comunidades.py")
 
-df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data","data/personas.csv")
+df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data")
 gb = GridOptionsBuilder.from_dataframe(df)
 gb.configure_default_column(
     groupable=True,

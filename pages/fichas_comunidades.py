@@ -248,7 +248,7 @@ if st.button("Emprendimiento Comunidades NaatHa"):
     st.switch_page("pages/emprendimientos_comunitarios.py")
 
 def get_data():
-    df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data","data/personas.csv")
+    df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data")
     gb = GridOptionsBuilder.from_dataframe(df)
     gb.configure_default_column(
         groupable=True,
