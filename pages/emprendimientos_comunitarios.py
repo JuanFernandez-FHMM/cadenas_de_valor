@@ -238,16 +238,51 @@ def clean_data(tablename,secondtable):
     
     return df_final_with_personas[final_cols].copy()
 
+def plot_tipo1(dataset,columna,titulo, textposition='auto'):
+        plot = px.pie(dataset, names=columna, title=titulo)
+        plot.update_traces(
+            textposition=textposition,
+            textinfo='percent+label+value',
+            hole=0.3,
+            marker=dict(line=dict(color='#000000', width=2))
+            )
+        return plot
+
+def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto'):
+    df_temp = dataframe[columna]
+    df = []
+
+    for i in df_temp:
+        found_categories = []
+        for categoria in lista_categorias:
+            if categoria.lower() in str(i).lower():  
+                found_categories.append(categoria)
+        df.append(found_categories)
+    df = pd.DataFrame({'categorias': [cat for cats in df for cat in (cats if cats else [None])]})
+
+    plot = px.pie(df, names="categorias", title=titulo)
+    plot.update_traces(
+        textposition=textposition,
+        textinfo='percent+label+value',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+
+    return plot
+
 st.set_page_config(page_title="Emprendimientos Comunitarios Naat-Ha", page_icon=":earth_americas:", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Mapeo de emprendimientos comunitarios Naat-Ha :earth_americas:")
+
 if st.button("Página principal"):
     st.switch_page("pagina_principal.py")
+
 if st.button("Mapa de fichas"):
     st.switch_page("pages/fichas_comunidades.py")
 
 df = clean_data("mapeo_emprend_comunitarios_naatha","mapeo_emprend_naatha_data")
 gb = GridOptionsBuilder.from_dataframe(df)
+
 gb.configure_default_column(
     groupable=True,
     value=True,
@@ -317,6 +352,7 @@ gb.configure_selection(
     use_checkbox=True,
     suppressRowDeselection=False
 )
+
 gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
 grid_options = gb.build()
 
@@ -337,11 +373,6 @@ selected_df = pd.DataFrame(selected_rows)
 if not selected_df.empty:
     st.subheader("Filas Seleccionadas")
     st.dataframe(selected_df[list(columns.keys())])
-    
-#    total_cosecha = selected_df['cantidad_cosecha'].sum()
-#    total_comercio = selected_df['cantidad_comercializar'].sum()
-#    st.write(f"Total Cosecha: {total_cosecha} \t|\t Total Comercializar: {total_comercio}")
-    
     csv = selected_df.to_csv(index=False).encode('utf-8')
     st.download_button(
         "Descargar",
@@ -350,480 +381,15 @@ if not selected_df.empty:
         "text/csv",
         key='download-selected'
     )
+
 else:
     st.write("No hay filas seleccionadas")
 
-
 if not selected_df.empty:
-
-    localidades = px.pie(selected_df, names="localidad", title="Localidades")
-    localidades.update_traces(
-        textposition='inside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    localidades.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    tipo_emprendimiento = px.pie(selected_df, names="tipo_emprendimiento", title="Tipos de emprendimiento")
-    tipo_emprendimiento.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    tipo_emprendimiento.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="v",yanchor='bottom', y=0.8, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-    selected_df["solo_o_grupo"] = selected_df["solo_o_grupo"].replace({"si": "En grupo", "no": "Individual"})
-    selected_df["emp_colab"] = selected_df["emp_colab"].replace({"si":"Sí", "no":"No"})
-    grupos = px.pie(selected_df, names="solo_o_grupo", title="Distribución de tipo de trabajo por emprendimiento (individual/grupal)")
-    grupos.update_traces(
-        textposition='inside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    grupos.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-    espaciodetrabajodf =selected_df.dropna(subset="esp_trabajo")
-    espaciodetrabajo =px.pie(espaciodetrabajodf, names="esp_trabajo", title="Estado de los espacios de trabajo por emprendimiento")
-    espaciodetrabajo.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    espaciodetrabajo.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-    herramientadf = selected_df.dropna(subset="herramienta")
-    herramienta = px.pie(herramientadf, names="herramienta", title="Estado de las herramientas por emprendimiento")
-    herramienta.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    herramienta.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-    maquinariaequipodf = selected_df.dropna(subset="maq_equipo")
-    maquinariaequipo=px.pie(maquinariaequipodf, names="maq_equipo", title="Estado de la maquinaria y del equipo por emprendimiento")
-    maquinariaequipo.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    maquinariaequipo.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    empleados = px.pie(selected_df, names="emp_colab", title="Porcentaje de emprendimientos que cuenta con empleados")
-    empleados.update_traces(
-        textposition='inside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    empleados.update_layout(
-        showlegend=True,
-        legend=dict(title="Categorías", orientation="h",yanchor='bottom', y=1.02, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    categorias_desafios = [
-    "Costos de materia prima",
-    "Logistica",
-    "Acceso a clientes",
-    "Competencia",
-    "Otro",
-    "Precio del producto"
-    ]
-    
-    desafios = selected_df['desafios']
-    desafios_df = []
-    #st.write(desafios)
-
-    for i in desafios:
-        found_categories = []
-        for categoria in categorias_desafios:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        desafios_df.append(found_categories)
-    desafios_df = pd.DataFrame({'categorias': [cat for cats in desafios_df for cat in (cats if cats else [None])]})
-
-    
-    desafios_pie = px.pie(desafios_df, names="categorias", title="Desafíos que detectaron los emprendimientos")
-    desafios_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    desafios_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=0.8, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-
-    categorias_comunicacion = [
-"Redes sociales",
-"Publicidad impresa",
-"Voceo",
-"De boca en boca",
-
-    ]
-    comunicacion = selected_df['comunicacion']
-    comunicacion_df = []
-
-    all_categories = []
-    for i in comunicacion:
-        found_categories = []
-        for categoria in categorias_comunicacion:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-
-    # Remove duplicates by converting to set and back to list
-    #st.write(all_categories)
-
-    #st.write(unique_categories)
-    comunicacion_df = pd.DataFrame(all_categories)
-    
-    comunicacion_pie = px.pie(comunicacion_df, names=0, title="Métodos de promoción de los emprendimientos dentro de la comunidad")
-    comunicacion_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    comunicacion_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    categorias_acompa = [
-"Capacitación",
-"Capital de trabajo",
-"Maquinaria y equipo",
-"Herramientas",
-"Espacio de trabajo",
-"Asesoría",
-
-    ]
-    acompa = selected_df['tipo_acompa']
-    acompa_df = []
-
-    all_categories = []
-    for i in acompa:
-        found_categories = []
-        for categoria in categorias_acompa:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-    acompa_df = pd.DataFrame(all_categories)
-    #st.write(acompa_df)
-    acompa_pie = px.pie(acompa_df, names=0, title="Tipos de acompañamiento que necesitan los emprendimientos")
-    acompa_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    acompa_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    acceso_internet =px.pie(selected_df, names="acc_int", title="Porcentaje de acceso a internet en los emprendimientos")
-    acceso_internet.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    acceso_internet.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    categorias_conex = [
-"Casa propia",
-"Biblioteca",
-"Comisaría",
-"Escuela",
-"Cabecera municipal",
-"Red pública (Ejemplo: CFE)",
-"Otro",
-
-
-    ]
-    conex = selected_df['donde_conex']
-    conex_df = []
-
-    all_categories = []
-    for i in conex:
-        found_categories = []
-        for categoria in categorias_conex:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-
-    conex_df = pd.DataFrame(all_categories)
-
-    conex_pie =px.pie(conex_df, names=0, title="Lugar donde se conectan a internet los representantes de los emprendimientos")
-    conex_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    conex_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-    calidad_conex_df = selected_df.dropna(subset="tipo_conexion")
-    calidad_conexion = px.pie(calidad_conex_df, names="tipo_conexion", title="Calidad de la conexión a internet de los representantes")
-    calidad_conexion.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    calidad_conexion.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    categorias_equipo_conex = [
-"Celular",
-"Computadora Escritorio",
-"Laptop",
-"Tablet",
-
-    ]
-
-    equipo_conex = selected_df['equipo']
-    equipo_conex_df = []
-
-    all_categories = []
-    for i in equipo_conex:
-        found_categories = []
-        for categoria in categorias_equipo_conex:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-
-    equipo_conex_df = pd.DataFrame(all_categories)
-
-    equipo_conex_pie =px.pie(equipo_conex_df, names=0, title="Equipo que usan para conectarse a internet")
-    equipo_conex_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    equipo_conex_pie.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    capacitacion = px.pie(selected_df, names="capacitacion", title="Emprendimientos que han recibido capacitación")
-    capacitacion.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    capacitacion.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    categorias_capacitacion = [
-"Emprenimiento",
-"Marketing",
-"Finanzas",
-"Otro",
-    ]
-
-    tipos_capacitacion = selected_df['tipo_capacitacion']
-    tipos_capacitacion_df = []
-
-    all_categories = []
-    for i in tipos_capacitacion:
-        found_categories = []
-        for categoria in categorias_capacitacion:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-
-    tipos_capacitacion_df = pd.DataFrame(all_categories)
-    #st.dataframe(tipos_capacitacion_df )
-    tipos_capacitacion_pie =px.pie(tipos_capacitacion_df, names=0, title="Tipos de capacitación recibida")
-    tipos_capacitacion_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-
-
-    donde_capacitacion = px.pie(selected_df, names="donde_capacitacion", title="Dónde se ha recibido la capacitación")
-    donde_capacitacion.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-
-
-
-    categorias_quien_capa = [
-"Sembrando vida",
-"Ayuntamiento municipal",
-"DIF",
-"IYEM",
-"Misiones culturales",
-"Fundación Soriana",
-"Ko'ox Taani",
-"EDUCE",
-"El hombre sobre la tierra",
-"Heifer",
-"INPI",
-"Una ONG",
-"Un particular",
-"Otro",
-    ]
-
-    quien_cap = selected_df['quien_cap']
-    quien_cap_df = []
-
-    all_categories = []
-    for i in quien_cap:
-        found_categories = []
-        for categoria in categorias_quien_capa:
-            if categoria.lower() in str(i).lower():  
-                found_categories.append(categoria)
-        if found_categories:  # Only append if found_categories is not empty
-            all_categories.extend(found_categories)
-
-    quien_cap_df = pd.DataFrame(all_categories)
-    #st.dataframe(tipos_capacitacion_df )
-    quien_cap_pie =px.pie(quien_cap_df, names=0, title="Quiénes otorgaron las capacitaciones")
-    quien_cap_pie.update_traces(
-        textposition='outside',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-
-
-    necesita_cap = px.pie(selected_df, names="necesita_cap", title="Porcentaje que considera necesitar capacitación para su emprendimiento")
-    necesita_cap.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    necesita_cap.update_layout(
-        showlegend=True,
-        legend=dict( orientation="v",yanchor='bottom', y=.08, xanchor='right', x=1.1),
-        title_font=dict(size=20),
-        uniformtext_minsize=12,
-        uniformtext_mode='hide'
-    )
-
-    forma_cap_df = selected_df.dropna(subset="forma_capacitacion")
-    forma_cap = px.pie(forma_cap_df, names="forma_capacitacion", title="Modalidad preferida para las capacitaciones")
-    forma_cap.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-
-
-    horario_df = selected_df.dropna(subset="horario")
-    horario = px.pie(horario_df, names="horario", title="Horario preferido para las capacitaciones")
-    horario.update_traces(
-        textposition='auto',
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-
-
-
     geo_df = selected_df.dropna(subset=['geo_lat', 'geo_lon'])
-
-    # Calculate the center of the points
     map_center = [geo_df['geo_lat'].mean(), geo_df['geo_lon'].mean()]
-
-    # Create Folium map
     m = folium.Map(location=map_center, zoom_start=12, tiles="OpenStreetMap")
 
-    # Add points with popups
     for _, row in geo_df.iterrows():
         # Create a small DataFrame for the popup
         popup_df = pd.DataFrame({
@@ -836,14 +402,9 @@ if not selected_df.empty:
             "Horario preferido": [row["horario"]]
         })
 
-        # Convert DataFrame to an HTML table
-        html_table = popup_df.to_html(
-            classes="table table-striped table-hover table-condensed table-responsive"
-        )
-
+        html_table = popup_df.to_html(classes="table table-striped table-hover table-condensed table-responsive")
         # Create a folium Popup with the HTML table
         popup = folium.Popup(html_table, max_width=800)
-
         # Add marker with popup & tooltip
         folium.Marker(
             location=[row['geo_lat'], row['geo_lon']],
@@ -852,62 +413,220 @@ if not selected_df.empty:
         ).add_to(m)
 
 
+    try:
 
+        selected_df["solo_o_grupo"] = selected_df["solo_o_grupo"].replace({"si": "En grupo", "no": "Individual"})
+        selected_df["emp_colab"] = selected_df["emp_colab"].replace({"si":"Sí", "no":"No"})
+        
+        localidades = plot_tipo1(selected_df, "localidad", "Localidades")
+        tipo_emprendimiento = plot_tipo1(selected_df, "tipo_emprendimiento", "Tipos de emprendimiento")
+        grupos = plot_tipo1(selected_df, "solo_o_grupo", "Distribución de tipo de trabajo por emprendimiento (individual/grupal)")
+        
+        espaciodetrabajodf = selected_df.dropna(subset="esp_trabajo")
+        espaciodetrabajo = plot_tipo1(espaciodetrabajodf,"esp_trabajo", "Estado de los espacios de trabajo por emprendimiento")
+
+        herramientadf = selected_df.dropna(subset="herramienta")
+        herramienta = plot_tipo1(herramientadf, "herramienta", "Estado de las herramientas por emprendimiento")
+
+        maquinariaequipodf = selected_df.dropna(subset="maq_equipo")
+        maquinariaequipo = plot_tipo1(maquinariaequipodf, "maq_equipo", "Estado de la maquinaria y del equipo por emprendimiento")
+
+        empleados = plot_tipo1(selected_df, "emp_colab", "Porcentaje de emprendimientos que cuenta con empleados")
+
+        desafios_pie = plot_tipo2(selected_df,[
+                        "Costos de materia prima",
+                        "Logistica",
+                        "Acceso a clientes",
+                        "Competencia",
+                        "Otro",
+                        "Precio del producto"
+                        ],
+                        'desafios',
+                        'Desafíos que detectaron los emprendimientos'
+                        )
+        
+        comunicacion_pie = plot_tipo2(selected_df,[
+                        "Redes sociales",
+                        "Publicidad impresa",
+                        "Voceo",
+                        "De boca en boca"
+                        ],
+                        'comunicacion',
+                        'Métodos de promoción de los emprendimientos dentro de la comunidad' 
+                        )
+        
+        acompa_pie = plot_tipo2(selected_df,[
+                        "Capacitación",
+                        "Capital de trabajo",
+                        "Maquinaria y equipo",
+                        "Herramientas",
+                        "Espacio de trabajo",
+                        "Asesoría",
+                        ],
+                        'tipo_acompa', 
+                        'Tipos de acompañamiento que necesitan los emprendimientos'   
+                        )
+        
+        acceso_internet = plot_tipo1(selected_df,'acc_int','Porcentaje de acceso a internet en los emprendimientos')
+
+        conex_pie = plot_tipo2(selected_df,[
+                        "Casa propia",
+                        "Biblioteca",
+                        "Comisaría",
+                        "Escuela",
+                        "Cabecera municipal",
+                        "Red pública (Ejemplo: CFE)",
+                        "Otro",
+                        ],
+                        'donde_conex',
+                        'Lugar donde se conectan a internet los representantes de los emprendimientos'    
+                        )
+        
+        calidad_conex_df = selected_df.dropna(subset="tipo_conexion")
+        calidad_conexion = plot_tipo1(calidad_conex_df,'tipo_conexion','Calidad de la conexión a internet de los representantes')
+
+        equipo_conex_pie = plot_tipo2(selected_df,[
+                        "Celular",
+                        "Computadora Escritorio",
+                        "Laptop",
+                        "Tablet",
+                        ],
+                        'equipo',
+                        'Equipo que usan para conectarse a internet'
+                        )
+        
+        capacitacion = plot_tipo1(selected_df,'capacitacion','Emprendimientos que han recibido capacitación')
+
+        tipos_capacitacion_pie = plot_tipo2(selected_df,[
+                        "Emprenimiento",
+                        "Marketing",
+                        "Finanzas",
+                        "Otro",
+                        ],
+                        'tipo_capacitacion',
+                        'Tipos de capacitación recibida'
+                        )
+
+        donde_capacitacion = plot_tipo1(selected_df,'donde_capacitacion','Dónde se ha recibido la capacitación')
+
+        quien_cap_pie = plot_tipo2(selected_df,[
+                        "Sembrando vida",
+                        "Ayuntamiento municipal",
+                        "DIF",
+                        "IYEM",
+                        "Misiones culturales",
+                        "Fundación Soriana",
+                        "Ko'ox Taani",
+                        "EDUCE",
+                        "El hombre sobre la tierra",
+                        "Heifer",
+                        "INPI",
+                        "Una ONG",
+                        "Un particular",
+                        "Otro",
+                        ],
+                        'quien_cap',
+                        'Quiénes otorgaron las capacitaciones'
+                        )
+
+        necesita_cap = plot_tipo1(selected_df, 'necesita_cap', 'Porcentaje que considera necesitar capacitación para su emprendimiento')
+
+        forma_cap_df = selected_df.dropna(subset="forma_capacitacion")
+        forma_cap = plot_tipo1(forma_cap_df,'forma_capacitacion','Modalidad preferida para las capacitaciones')
+
+        horario_df = selected_df.dropna(subset="horario")
+        horario = plot_tipo1(horario_df, 'horario', 'Horario preferido para las capacitaciones')
+
+    except:
+        st.info("Hay un problema al generar algunas gráficas. Por favor selecciona otros datos.\nSi el error persiste comuníquelo a david.contreras@fhmm.org o a juan.fernandez@fhmm.org")
 
     col1, col2 = st.columns(2)
     c1,c2,c3 = st.columns(3)
-    with col1:
-        st.plotly_chart(tipo_emprendimiento, use_container_width=True)
-        st.plotly_chart(grupos, use_container_width=True)
-        st.plotly_chart(empleados, use_container_width=True)
-        st.plotly_chart(comunicacion_pie, use_container_width=True)
-        st.plotly_chart(acceso_internet, use_container_width=True)
+
+    try:
+
+        with col1:
+
+            st.plotly_chart(tipo_emprendimiento, use_container_width=True)
+            st.plotly_chart(grupos, use_container_width=True)
+            st.plotly_chart(empleados, use_container_width=True)
+            st.plotly_chart(comunicacion_pie, use_container_width=True)
+            st.plotly_chart(acceso_internet, use_container_width=True)
+            
+            
+        with col2:
+
+            st.plotly_chart(localidades, use_container_width=True)
+            st.plotly_chart(desafios_pie, use_container_width=True)
+            st.plotly_chart(acompa_pie, use_container_width=True)
+            st.plotly_chart(calidad_conexion, use_container_width=True)
+            st.plotly_chart(equipo_conex_pie, use_container_width=True)
+            
+            
+        with c1:
+
+            st.plotly_chart(espaciodetrabajo, use_container_width=True)
+
+
+        with c2:
+
+            st.plotly_chart(herramienta, use_container_width=True)
+
+
+        with c3:
+
+            st.plotly_chart(maquinariaequipo, use_container_width=True)
         
+
+
+        st.plotly_chart(capacitacion, use_container_width=True)
+
+        co1, co2, co3,  = st.columns(3)
         
+        with co1:
+
+            st.plotly_chart(donde_capacitacion, use_container_width=True)
+
+
+        with co2:
+
+            st.plotly_chart(tipos_capacitacion_pie, use_container_width=True)
+
+
+        with co3:
+
+            st.plotly_chart(quien_cap_pie, use_container_width=True)
+
+
+        co4, co5, co6 = st.columns(3)
+
+        with co4:
+
+            st.plotly_chart(necesita_cap, use_container_width=True)
+
+
+        with co5:
+
+            st.plotly_chart(forma_cap, use_container_width=True)
+
+
+        with co6:
+
+            st.plotly_chart(horario, use_container_width=True)
+
+
+        folium_static(m, width=1000, height=1000)
         
+        m.save("mapa.html")
+
+        with open("mapa.html", "rb") as file:
+
+            st.download_button(label="Descargar mapa", data=file, file_name="mapa.html", mime="text/html")
+
+    except:
+
+        st.error("Hubo un problema al renderizar las gráficas, por favor comuníqueselo a david.contreras@fhmm.org o a juan.fernandez@fhmm.org")
         
-    with col2:
-        st.plotly_chart(localidades, use_container_width=True)
-        st.plotly_chart(desafios_pie, use_container_width=True)
-        st.plotly_chart(acompa_pie, use_container_width=True)
-        st.plotly_chart(calidad_conexion, use_container_width=True)
-        st.plotly_chart(equipo_conex_pie, use_container_width=True)
-        
-        
-
-    with c1:
-        st.plotly_chart(espaciodetrabajo, use_container_width=True)
-    with c2:
-        st.plotly_chart(herramienta, use_container_width=True)
-    with c3:
-        st.plotly_chart(maquinariaequipo, use_container_width=True)
-    
-    st.plotly_chart(capacitacion, use_container_width=True)
-
-    co1, co2, co3,  = st.columns(3)
-    with co1:
-        st.plotly_chart(donde_capacitacion, use_container_width=True)
-    with co2:
-        st.plotly_chart(tipos_capacitacion_pie, use_container_width=True)
-    with co3:
-        st.plotly_chart(quien_cap_pie, use_container_width=True)
-
-    co4, co5, co6 = st.columns(3)
-    with co4:
-        st.plotly_chart(necesita_cap, use_container_width=True)
-    with co5:
-        st.plotly_chart(forma_cap, use_container_width=True)
-    with co6:
-        st.plotly_chart(horario, use_container_width=True)
-
-    
-
-    folium_static(m, width=1000, height=1000)
-    
-    m.save("mapa.html")
-    with open("mapa.html", "rb") as file:
-        st.download_button(label="Descargar mapa", data=file, file_name="mapa.html", mime="text/html")
-
-
 else:
+
     st.write("Selecciona filas para cargas las gráficas.")
