@@ -34,7 +34,7 @@ def read_data(tablename):
         conn = connect_to_db()
         cur = conn.cursor()
         
-        cur.execute(f"SELECT data FROM {tablename}")
+        cur.execute(f"SELECT data FROM \"{tablename}\"")
         data = cur.fetchall()
         
         return data
