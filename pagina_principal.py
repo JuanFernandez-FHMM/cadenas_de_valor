@@ -23,3 +23,8 @@ else:
             if st.button(page_name):
                 file = f"pages/{file}"
                 st.switch_page(file)
+
+
+video_url = f"https://www.youtube.com/watch?v=Ukre4MMCQfo"
+
+st.video(video_url) 
