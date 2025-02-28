@@ -181,8 +181,8 @@ if not selected_df.empty:
         selected_df['edad'] = pd.to_numeric(selected_df['edad'], errors='coerce')  # Convert to numeric
 
         # Define the age bins
-        age_bins = [0, 12, 15, 18, 21, 29, 100]
-        age_labels = ['0-12', '13-15', '16-18', '19-21', '22-29', '30+']
+        age_bins = [0, 11, 14, 18, 29, 100]
+        age_labels = ['12-', '12-14', '15-18', '19-29', '30+']
 
         # Create a new column for the age groups
         selected_df['age_group'] = pd.cut(selected_df['edad'], bins=age_bins, labels=age_labels, right=False)
@@ -247,15 +247,12 @@ try:
         for _, row in geo_df.iterrows():
             # Create popup table
             popup_df = pd.DataFrame({
-                "Campo": ["Emprendimiento", "Tipo", "Persona", "Capacitación", "Área", "Modalidad", "Horario"],
+                "Campo": ["Estado", "Municipio", "Localidad",],
                 "Valor": [
-                    row.get("emprendimiento", ""),
-                    row.get("tipo_emprendimiento", ""),
-                    row.get("persona", ""),
-                    row.get("necesita_cap", ""),
-                    row.get("enque", ""),
-                    row.get("forma_capacitacion", ""),
-                    row.get("horario", "")
+                    row.get("estado", ""),
+                    row.get("municipio", ""),
+                    row.get("localidad", ""),
+
                 ]
             })
             
