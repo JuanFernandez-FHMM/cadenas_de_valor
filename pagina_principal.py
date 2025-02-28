@@ -27,4 +27,6 @@ else:
 
 video_url = f"https://www.youtube.com/watch?v=Ukre4MMCQfo"
 
-st.video(video_url) 
+with st.expander("Guía para el uso de la página"):	
+    container = st.container(border=True,)
+    container.video(video_url)
