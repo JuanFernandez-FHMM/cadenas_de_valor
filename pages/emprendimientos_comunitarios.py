@@ -428,7 +428,7 @@ if not selected_df.empty:
 
         html_table = popup_df.to_html(classes="table table-striped table-hover table-condensed table-responsive")
         # Create a folium Popup with the HTML table
-        popup = folium.Popup(html_table, max_width=800)
+        popup = folium.Popup(html_table, max_width=600)
         # Add marker with popup & tooltip
         folium.Marker(
             location=[row['geo_lat'], row['geo_lon']],
