@@ -384,7 +384,7 @@ grid_options = gb.build()
 grid_response = AgGrid(
     df,
     gridOptions=grid_options,
-    height=800,
+    height=600,
     width='100%',
     allow_unsafe_jscode=True,
     update_mode='SELECTION_CHANGED'
