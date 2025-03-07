@@ -46,6 +46,8 @@ def convert_df_to_csv(df):
 
 
 
+
+
 tablename = 'meliponicultura_comercializacion_2025'
 secondtable = 'meliponicultura_2024_data'
 
@@ -526,9 +528,9 @@ with plots:
 
             plot1df = df_plots.drop_duplicates(subset=['_id', 'grupo'])
 
-            plot1 = plot_tipo1(plot1df, 'grupo', 'Distribución de las abejas por grupo')
+            plot1 = plot_tipo1(plot1df, 'localidad', 'Distribución de respuestas por Localidad')
             
-            st.plotly_chart(plot1)
+            
 
             bees = df_plots.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
 
@@ -536,9 +538,13 @@ with plots:
 
             plot2 = plot_tipo1(bees,'repeat_abejas.repeat_abejas/current_abeja', 'Distribución de las abejas por tipo')
 
-            st.plotly_chart(plot2)
-
-
+            
+            
+            col1,col2 = st.columns(2)
+            with col1:
+                st.plotly_chart(plot1)
+            with col2:
+                st.plotly_chart(plot2)
 
             # histogram for prods based on df_plots with repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025 on y and repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod on x
             #transform _id to string to avoid error
@@ -559,50 +565,111 @@ with plots:
             # drop where cant_prod_2025 is 0
             plot3df = plot3df[plot3df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
 
-            plot3 = px.histogram(plot3df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
-                                  x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
-                                 y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
-                                 title='Distribución de la cantidad de polen a producir en 2025', color='grupo',
-                                 labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
-                                         'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
-                                
-                                facet_col='grupo')
-            plot3.update_layout(template='plotly_dark')
+            # First, create a mapping from _id to grupo name
+            id_to_group = dict(zip(plot3df['_id'], plot3df['grupo']))
+
+            # Create the plot using _id for color
+            plot3 = px.histogram(
+                plot3df,
+                hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                title='Cantidad de polen y colmenas a cosechar en 2025', 
+                color='_id',  # Use _id for color
+                labels={
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a cosechar en 2025',
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'
+                },
+                facet_col='grupo'
+            )
+
+            # Update the color legend labels
+            for i, id_val in enumerate(plot3.data):
+                if hasattr(id_val, 'name') and id_val.name in id_to_group:
+                    id_val.name = id_to_group[id_val.name]  # Replace ID with group name in legend
+
+            # Or alternatively, you can update the entire legend
+            plot3.update_layout(
+                legend_title_text='Grupo',
+                legend=dict(
+                    itemsizing='constant',
+                    title_font=dict(size=12),
+                    font=dict(size=10)
+                )
+            )
+
             st.plotly_chart(plot3)
 
             # plot where prod is = 'Miel (L)'
             plot4df = df_plots[df_plots['type'] == 'l']
-            # drop where prod_2025 is null
-            plot4df = plot4df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'])
-            # drop where cant_prod_2025 is 0
-            plot4df = plot4df[plot4df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
+            id_to_group_4 = dict(zip(plot4df['_id'], plot4df['grupo']))
 
+            # Create the plot using _id for color
+            plot4 = px.histogram(
+                plot4df,
+                hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                title='Cantidad de miel a cosechar en 2025', 
+                color='_id',  # Use _id for color
+                labels={
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a cosechar en 2025',
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'
+                },
+                facet_col='grupo'
+            )
 
-            plot4 = px.histogram(plot4df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
-                                    x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
-                                     y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
-                                     title='Distribución de la cantidad de miel a producir en 2025', color='grupo',
-                                     labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
-                                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
-                                    
-                                    facet_col='grupo')
-    
+            # Update the color legend labels
+            for i, id_val in enumerate(plot4.data):
+                if hasattr(id_val, 'name') and id_val.name in id_to_group_4:
+                    id_val.name = id_to_group_4[id_val.name]
+
+            # Update legend layout
+            plot4.update_layout(
+                legend_title_text='Grupo',
+                legend=dict(
+                    itemsizing='constant',
+                    title_font=dict(size=12),
+                    font=dict(size=10)
+                )
+            )
+
             st.plotly_chart(plot4)
 
             #plot where type is pieza
             plot5df = df_plots[df_plots['type'] == 'pieza']
-            # drop where prod_2025 is null
-            plot5df = plot5df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'])
-            # drop where cant_prod_2025 is 0
-            plot5df = plot5df[plot5df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
-            plot5 = px.histogram(plot5df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
-                                    x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
-                                     y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
-                                     title='Distribución de la cantidad de piezas a producir en 2025', color='grupo',
-                                     labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
-                                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
-                                    
-                                    facet_col='grupo')
+            id_to_group_5 = dict(zip(plot5df['_id'], plot5df['grupo']))
+
+            # Create the plot using _id for color
+            plot5 = px.histogram(
+                plot5df,
+                hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                title='Cantidad de colmenas a cosechar en 2025', 
+                color='_id',  # Use _id for color
+                labels={
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a cosechar en 2025',
+                    'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'
+                },
+                facet_col='grupo'
+            )
+
+            # Update the color legend labels
+            for i, id_val in enumerate(plot5.data):
+                if hasattr(id_val, 'name') and id_val.name in id_to_group_5:
+                    id_val.name = id_to_group_5[id_val.name]
+
+            # Update legend layout
+            plot5.update_layout(
+                legend_title_text='Grupo',
+                legend=dict(
+                    itemsizing='constant',
+                    title_font=dict(size=12),
+                    font=dict(size=10)
+                )
+            )
+
             st.plotly_chart(plot5)
 
 
