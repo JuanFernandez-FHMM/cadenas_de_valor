@@ -3,12 +3,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import utils
 import pandas as pd
 import plotly.express as px
-from geopy.geocoders import Nominatim
-import time
-import folium
-from streamlit_folium import folium_static
-import numpy as np
 import io
+import re
 
 
 def plot_tipo1(dataset, columna, titulo, textposition='auto'):
@@ -20,7 +16,6 @@ def plot_tipo1(dataset, columna, titulo, textposition='auto'):
         marker=dict(line=dict(color='#000000', width=2))
     )
     return plot
-
 def plot_tipo2(dataframe, lista_categorias, columna, titulo, textposition='auto'):
     df_temp = dataframe[columna]
     df = []
@@ -36,7 +31,6 @@ def plot_tipo2(dataframe, lista_categorias, columna, titulo, textposition='auto'
         marker=dict(line=dict(color='#000000', width=2))
     )
     return plot
-
 def concatenate_values(series):
     return ','.join(str(v) for v in series if pd.notna(v)) if  (v for v in series) is int else lambda x: ','.join(sorted(set(str(v) for v in x if pd.notna(v))))
 def replace_values(value):
@@ -56,11 +50,13 @@ tablename = 'meliponicultura_comercializacion_2025'
 secondtable = 'meliponicultura_2024_data'
 
 flat_data, second_table = utils.start_(tablename, secondtable=secondtable)
+
 df = pd.json_normalize(flat_data)
 
 # Drop unnecessary metadata columns
 drop_cols = ['formhub/uuid', 'start', 'end', '__version__', 'meta/instanceID', '_xform_id_string', '_uuid',
              '_attachments', '_status', '_geolocation', '_submission_time', '_tags', '_notes', '_submitted_by']
+
 df.drop(columns=[col for col in drop_cols if col in df.columns], inplace=True)
 
 # List of nested columns (repeat groups) that need to be exploded
@@ -79,17 +75,15 @@ expanded_dfs = []
 for group in repeat_groups:
 
     if group in df.columns:
-        
-
 
         expanded_df = df.explode(group)
         expanded_df = pd.json_normalize(expanded_df.to_dict(orient="records"))
         expanded_dfs.append(expanded_df)
+
         if group == "repeat_abejas":
-            #print(expanded_df.columns)
-            #com = expanded_df
-            # expand com_x_productos inside abejas named "repeat_abejas/com_x_productos"
+
             if "repeat_abejas.repeat_abejas/com_x_productos" in expanded_df.columns:
+
                 expand_df = expanded_df.explode("repeat_abejas.repeat_abejas/com_x_productos")
                 expand_df = pd.json_normalize(expand_df.to_dict(orient="records"))
                 expanded_dfs.append(expand_df)
@@ -97,43 +91,69 @@ for group in repeat_groups:
 
 # Merge back all expanded data
 if expanded_dfs:
+
     df = pd.concat(expanded_dfs, ignore_index=True)
 
+
 if second_table:
+
     secondtable_dict = dict(second_table)
+
+
 else:
+
     secondtable_dict = {}
+
 
 columns_to_replace = [
     'estado','municipio','localidad','grupo','persona', 'repeat_persona_edadsexo.repeat_persona_edadsexo/sexo_persona', 'repeat_otros.repeat_otros/sexo',
-     'abejas', 'repeat_abejas.repeat_abejas/productos', 'factura','ciclo','pract_conserv', 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores',
+    'abejas', 'repeat_abejas.repeat_abejas/productos', 'factura','ciclo','pract_conserv', 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores',
     'repeat_practicas.repeat_practicas/capacitador','convenios', 'repeat_convenios.repeat_convenios/conv_prov','conserv_abejas','alimentacion',
     'acces_ubi', 'infra', 'acom', 'lim', 'herr', 'agro','herr_equipo','trab','auto',
-]
-
+    ]
 
 for col in columns_to_replace:
+        
         df[col] = df[col].apply(replace_values)
+
 
 df.drop(columns=["repeat_persona_edadsexo_count", "repeat_abejas_count",'repeat_practicas_count',
                  'repeat_abejas','repeat_practicas','repeat_convenios_count','repeat_convenios',
                  'repeat_otros_count', 'repeat_otros','repeat_persona_edadsexo','repeat_otros.repeat_otros/curr_persona_nueva',
-                 'repeat_abejas.repeat_abejas/com_x_productos'], inplace=True)
+                 'repeat_abejas.repeat_abejas/com_x_productos'],
+                inplace=True)
+
+
+
+#######################
+###### STREAMLIT ######
+#######################
+
+
 
 st.set_page_config(page_title="Meliponicultura Comercialización 2025", page_icon=":honeybee:", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Meliponicultura Comercialización 2025 :honeybee:")
+
 if st.button("Página principal"):
+    
     st.switch_page("pagina_principal.py")
 
 
 
 
-# use dropdown to show table
+########################
+##### FIRST TABLE ######
+########################
+
 tb_principal = st.expander("Tabla principal", icon=":material/table_view:")
+
 with tb_principal:
+
     st.write(df)
+
     csv_data = convert_df_to_csv(df)
+
     st.download_button(
         label="Descargar CSV",
         data=csv_data,
@@ -144,31 +164,44 @@ with tb_principal:
 
 
 
-useful = df.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
-#fill every null with 0
-
-# Group by _id and the main identifier, then concatenate other columns
-#merged_abejas = useful.groupby(["_id", "repeat_abejas.repeat_abejas/current_abeja", 'grupo']).agg(concatenate_values).reset_index()
-
-cols_to_keep = ['_id','grupo',  ]
-useful_first_filter = useful.loc[:, cols_to_keep]
-
-useful_first_filter = useful_first_filter.drop_duplicates(subset=['_id', 'grupo',])
-#st.write(useful_first_filter)
-cols1 = {
-    '_id': 'ID',
-    'grupo': 'Grupo',
-}
-# Now rename the columns using the columns1 dictionary
-useful_first_filter = useful_first_filter.rename(columns=cols1)
+#########################
+##### SECOND TABLE ######
+#########################
 
 
-#useful_first_filter.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod'], inplace=True)
-#st.write(abejas)
-tb_ventas = st.expander("Tabla con filtro de productos", icon=":material/inventory_2:")
-with tb_ventas:
-    #st.write(useful_first_filter)
+st.subheader("Filtros")
+
+st.write("Seleccione los filtros que desea aplicar a la tabla principal")
+
+with st.container(border=True):
+
+    useful = df.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
+
+    cols_to_keep = ['_id','localidad', 'grupo', 'persona', 'factura','ciclo', ]
+
+    useful_first_filter = useful.loc[:, cols_to_keep]
+
+    useful_first_filter = useful_first_filter.drop_duplicates(subset=['_id', 'grupo',])
+
+    cols1 = {
+        '_id': 'ID',
+        'localidad': 'Localidad',
+        'grupo': 'Grupo',
+        'persona': 'Persona',
+        'factura': 'Factura',
+        'ciclo': 'Ciclo',
+    }
+
+    # Now rename the columns using the columns1 dictionary
+    useful_first_filter = useful_first_filter.rename(columns=cols1)
+
+
+    ### FIRST AGGRID TABLE ###
+
     gb = GridOptionsBuilder.from_dataframe(useful_first_filter)
+
+    gb.configure_side_bar(filters_panel=True)
+
     gb.configure_default_column(
         groupable=True,
         value=True,
@@ -183,13 +216,8 @@ with tb_ventas:
         autoSizeColumns=True
     )
 
-    # You can also set a minimum width for all columns
     gb.configure_grid_options(columnSize="sizeToFit")
 
-    # For specific columns that need custom width
-    # gb.configure_column("column_name", minWidth=200)
-
-    # Rest of your code remains the same
     gb.configure_selection(
         selection_mode="multiple",
         use_checkbox=True,
@@ -197,7 +225,7 @@ with tb_ventas:
         header_checkbox=True,
         suppressRowDeselection=False
     )
-    gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
+
     grid_options = gb.build()
 
     grid_response = AgGrid(
@@ -205,13 +233,18 @@ with tb_ventas:
         gridOptions=grid_options,
         fit_columns_on_grid_load=True,  # This is important
         allow_unsafe_jscode=True,
-        update_mode='SELECTION_CHANGED'
+        update_mode='SELECTION_CHANGED',
+        theme='fresh'
     )
 
     selected_rows = grid_response['selected_rows']
+
     selected_df = pd.DataFrame(selected_rows)
+
     if not selected_df.empty:
+
         csv_data = convert_df_to_csv(selected_df)
+
         st.download_button(
             label="Descargar CSV",
             data=csv_data,
@@ -220,45 +253,122 @@ with tb_ventas:
             key="second"
         )
 
-        #second_filter = st.expander("Abejas", icon=":material/emoji_nature:")
-        #find selected in df and make new df
+
+        ### SECOND AGGRID TABLE ###
+
+        useful2_2 = df.dropna(subset=['repeat_practicas.repeat_practicas/current_practica'])
+
+        selected2_2 = useful2_2[useful2_2['_id'].isin(selected_df['ID'])]
+
+
+        cols_2_keep_second = ['_id','grupo', 'localidad', 'repeat_practicas.repeat_practicas/current_practica','repeat_practicas.repeat_practicas/capacitador','repeat_practicas.repeat_practicas/capacitador_otro']
+
+        useful2 = selected2_2.loc[:, cols_2_keep_second]
+
+        useful2 = useful2.drop_duplicates(subset=['_id', 'grupo', 'repeat_practicas.repeat_practicas/current_practica'])
+
+        cols2_2 = {
+            '_id': 'ID',
+            'grupo': 'Grupo',
+            'localidad': 'Localidad',
+            'repeat_practicas.repeat_practicas/current_practica': 'Práctica',
+            'repeat_practicas.repeat_practicas/capacitador': 'Capacitador',
+            'repeat_practicas.repeat_practicas/capacitador_otro': 'Otro capacitador'
+        }
+
+        useful2 = useful2.rename(columns=cols2_2)
+
+        gb2_2 = GridOptionsBuilder.from_dataframe(useful2)
+
+        gb2_2.configure_default_column(
+            groupable=True,
+            value=True,
+            enableRowGroup=True,
+            aggFunc='sum',
+            filter='agTextColumnFilter',
+            resizable=True,
+            autoHeight=True,
+            wrapText=True,
+            autoSizeColumns=True
+        )
+
+        gb2_2.configure_grid_options(columnSize="sizeToFit")
+        
+        gb2_2.configure_selection(
+            selection_mode="multiple",
+            use_checkbox=True,
+            header_checkbox=True,
+            pre_selected_rows=[],
+            suppressRowDeselection=False
+        )
+
+        gb2_2.configure_side_bar(filters_panel=True)
+
+        grid_options = gb2_2.build()
+
+        grid_response = AgGrid(
+            useful2,
+            gridOptions=grid_options,
+            fit_columns_on_grid_load=True,  # This is important
+            allow_unsafe_jscode=True,
+            update_mode='SELECTION_CHANGED',
+            theme='fresh'
+        )
+
+        selected_rows2_2 = grid_response['selected_rows']
+        
+        selected_df2_2 = pd.DataFrame(selected_rows2_2)
+
+        if not selected_df2_2.empty:
+
+            csv_data2_2 = convert_df_to_csv(selected_df2_2)
+
+            st.download_button(
+                label="Descargar CSV",
+                data=csv_data2_2,
+                file_name="data.csv",
+                mime="text/csv",
+                key="third2_2"
+            )
+        
+
+
         selected = useful[useful['_id'].isin(selected_df['ID'])]
+
         cols_to_keep2 = ['_id','repeat_abejas.repeat_abejas/current_abeja','repeat_abejas.repeat_abejas/num_colmenas_fuertes',
-                          'repeat_abejas.repeat_abejas/num_colmenas_estables','repeat_abejas.repeat_abejas/num_colmenas_pequenas',]
+                            'repeat_abejas.repeat_abejas/num_colmenas_estables','repeat_abejas.repeat_abejas/num_colmenas_pequenas',]
+        
         selected = selected.loc[:, cols_to_keep2]
+
         selected = selected.drop_duplicates()
+
         secondary = selected.copy()
+
         cols2 = {
             '_id': 'ID',    
             'repeat_abejas.repeat_abejas/current_abeja': 'Abeja',
             'repeat_abejas.repeat_abejas/num_colmenas_fuertes': 'Número de colmenas fuertes',
             'repeat_abejas.repeat_abejas/num_colmenas_estables': 'Número de colmenas estables',
             'repeat_abejas.repeat_abejas/num_colmenas_pequenas': 'Número de colmenas pequeñas',}
-        # Now rename the columns using the columns2 dictionary}
+
         secondary = secondary.rename(columns=cols2)
-        #st.write(selected)
+
         gb2 = GridOptionsBuilder.from_dataframe(secondary)
+
         gb2.configure_default_column(
             groupable=True,
             value=True,
             enableRowGroup=True,
             aggFunc='sum',
             filter='agTextColumnFilter',
-            # Add these options for better auto-sizing
             resizable=True,
             autoHeight=True,
             wrapText=True,
-            # This will make columns fit their content
             autoSizeColumns=True
         )
 
-        # You can also set a minimum width for all columns
         gb2.configure_grid_options(columnSize="sizeToFit")
 
-        # For specific columns that need custom width
-        # gb.configure_column("column_name", minWidth=200)
-
-        # Rest of your code remains the same
         gb2.configure_selection(
             selection_mode="multiple",
             use_checkbox=True,
@@ -266,7 +376,9 @@ with tb_ventas:
             pre_selected_rows=[],
             suppressRowDeselection=False
         )
-        gb2.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
+
+        gb2.configure_side_bar(filters_panel=True)
+
         grid_options = gb2.build()
 
         grid_response = AgGrid(
@@ -279,9 +391,20 @@ with tb_ventas:
         )
         
         secondary_response = grid_response['selected_rows']
+
         secondary_response_df = pd.DataFrame(secondary_response)
+
+        
+        
+
+
+
+        
+
         if not secondary_response_df.empty:
+
             csv = secondary_response_df.to_csv(index=False).encode('utf-8')
+
             st.download_button(
                 label="Descargar CSV",
                 data=csv,
@@ -290,17 +413,29 @@ with tb_ventas:
                 key="thrd"
             )
 
-            # get only where current_abeja is in selected based on id
+            
+            ### THIRD AGGRID TABLE ###
+
             selected = useful[useful['_id'].isin(secondary_response_df['ID'])]
-            cols_to_keep3 = ['_id','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_com_prod',
-                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores', 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
-                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/quien_otro']
+
+            cols_to_keep3 = ['_id','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                            'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_com_prod',
+                            'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores', 
+                            'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                            'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/quien_otro']
+            
             selected = selected.loc[:, cols_to_keep3]
+
             selected = selected.drop_duplicates()
+
             selected = selected.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod'])
-            selected = selected[['_id','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_com_prod',
-                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores', 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/quien_otro','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
-                             ]]
+
+            selected = selected[['_id','repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                                 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_com_prod',
+                                'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores',
+                                  'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/quien_otro',
+                                  'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                                ]]
             columns3 = {
                 '_id': 'ID',
                 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto',
@@ -309,31 +444,26 @@ with tb_ventas:
                 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/quien_otro': 'Otro comprador',
                 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en el 2025'
             }
-            # Now rename the columns using the columns3 dictionary
+            
+            
             selected = selected.rename(columns=columns3)
-            #st.write(selected)
+
             gb3 = GridOptionsBuilder.from_dataframe(selected)
+
             gb3.configure_default_column(
                 groupable=True,
                 value=True,
                 enableRowGroup=True,
                 aggFunc='sum',
                 filter='agTextColumnFilter',
-                # Add these options for better auto-sizing
                 resizable=True,
                 autoHeight=True,
                 wrapText=True,
-                # This will make columns fit their content
                 autoSizeColumns=True
             )
 
-            # You can also set a minimum width for all columns
             gb3.configure_grid_options(columnSize="sizeToFit")
 
-            # For specific columns that need custom width
-            # gb.configure_column("column_name", minWidth=200)
-
-            # Rest of your code remains the same
             gb3.configure_selection(
                 selection_mode="multiple",
                 use_checkbox=True,
@@ -341,7 +471,9 @@ with tb_ventas:
                 pre_selected_rows=[],
                 suppressRowDeselection=False
             )
-            gb3.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
+            
+            gb3.configure_side_bar(filters_panel=True)
+
             grid_options = gb3.build()
 
             grid_response = AgGrid(
@@ -356,9 +488,13 @@ with tb_ventas:
                 #gb3.configure_column()
             
             selected_response = grid_response['selected_rows']
+
             selected3 = pd.DataFrame(selected_response)
+
             if not selected3.empty:
+
                 csv = selected3.to_csv(index=False).encode('utf-8')
+
                 st.download_button(
                     label="Descargar CSV",
                     data=csv,
@@ -367,13 +503,112 @@ with tb_ventas:
                     key="fourth"
                 )
 
-
-
         else:
             st.write("No hay filas seleccionadas")
-
-            
 
     else:
         st.write("No hay filas seleccionadas")
 
+########################
+##### PLOTS ###########
+########################
+
+st.subheader("Gráficos")
+
+plots = st.expander("Gráficos", expanded=False)
+
+with plots:
+    try:
+        if not df.empty:
+
+            # get data grouped by _id and grupo where repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod is not null
+            df_plots = df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod'])
+
+            plot1df = df_plots.drop_duplicates(subset=['_id', 'grupo'])
+
+            plot1 = plot_tipo1(plot1df, 'grupo', 'Distribución de las abejas por grupo')
+            
+            st.plotly_chart(plot1)
+
+            bees = df_plots.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
+
+            bees.drop_duplicates(subset=['_id', 'grupo'], inplace=True)
+
+            plot2 = plot_tipo1(bees,'repeat_abejas.repeat_abejas/current_abeja', 'Distribución de las abejas por tipo')
+
+            st.plotly_chart(plot2)
+
+
+
+            # histogram for prods based on df_plots with repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025 on y and repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod on x
+            #transform _id to string to avoid error
+            df_plots['_id'] = df_plots['_id'].astype(str)
+            # extract what is inside parenthesis in current_prod as new col called type
+            
+
+            regex = r"\((.*?)\)"
+
+            df_plots['type'] = df_plots['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod'].apply(lambda x: re.search(regex, x).group(1) if re.search(regex, x) else None)
+            
+
+            # plot where prod is = 'Polen (g)'
+
+            plot3df = df_plots[df_plots['type'] == 'g']
+            # drop where prod_2025 is null
+            plot3df = plot3df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'])
+            # drop where cant_prod_2025 is 0
+            plot3df = plot3df[plot3df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
+
+            plot3 = px.histogram(plot3df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                                  x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                                 y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                                 title='Distribución de la cantidad de polen a producir en 2025', color='grupo',
+                                 labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
+                                         'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
+                                
+                                facet_col='grupo')
+            plot3.update_layout(template='plotly_dark')
+            st.plotly_chart(plot3)
+
+            # plot where prod is = 'Miel (L)'
+            plot4df = df_plots[df_plots['type'] == 'l']
+            # drop where prod_2025 is null
+            plot4df = plot4df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'])
+            # drop where cant_prod_2025 is 0
+            plot4df = plot4df[plot4df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
+
+
+            plot4 = px.histogram(plot4df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                                    x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                                     y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                                     title='Distribución de la cantidad de miel a producir en 2025', color='grupo',
+                                     labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
+                                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
+                                    
+                                    facet_col='grupo')
+    
+            st.plotly_chart(plot4)
+
+            #plot where type is pieza
+            plot5df = df_plots[df_plots['type'] == 'pieza']
+            # drop where prod_2025 is null
+            plot5df = plot5df.dropna(subset=['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'])
+            # drop where cant_prod_2025 is 0
+            plot5df = plot5df[plot5df['repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025'] != '0']
+            plot5 = px.histogram(plot5df,hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
+                                    x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
+                                     y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
+                                     title='Distribución de la cantidad de piezas a producir en 2025', color='grupo',
+                                     labels={'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a producir en 2025',
+                                             'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod': 'Producto'},
+                                    
+                                    facet_col='grupo')
+            st.plotly_chart(plot5)
+
+
+
+        else:
+            st.write("No hay datos para mostrar")
+
+    except Exception as e:
+        st.write(f"Ocurrió un error: {e}")
