@@ -191,7 +191,7 @@ with st.container(border=True):
         'grupo': 'Grupo',
         'persona': 'Persona',
         'factura': 'Factura',
-        'ciclo': 'Ciclo',
+        'ciclo': 'Ciclo de comercialización con TRM',
     }
 
     # Now rename the columns using the columns1 dictionary
@@ -546,6 +546,31 @@ with plots:
             with col2:
                 st.plotly_chart(plot2)
 
+            # Define the KPIs that must always be shown
+            required_kpis = ["Miel (l)", "Polen (g)", "Propóleos (g)", "Colmenas (pieza)"]
+
+            # Convert values to integers and sum them
+            df_plots["repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025"] = (
+                df_plots["repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025"]
+                .astype(float)
+            )
+
+            # Group by 'current_prod' and sum values
+            prod_dict = df_plots.groupby(
+                "repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod"
+            )["repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025"].sum().to_dict()
+
+            # Function to display a metric
+            def make_metric(label, value):
+                st.metric(label=label, value=value)
+
+                # Layout columns for KPIs
+            cols = st.columns(len(required_kpis))
+
+            for i, kpi in enumerate(required_kpis):
+                value = prod_dict.get(kpi, 0)  # Get sum from grouped dict, or default to 0
+                with cols[i]:
+                    make_metric(kpi, value)
             # histogram for prods based on df_plots with repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025 on y and repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod on x
             #transform _id to string to avoid error
             df_plots['_id'] = df_plots['_id'].astype(str)
