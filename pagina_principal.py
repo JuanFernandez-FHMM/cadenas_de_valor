@@ -19,7 +19,7 @@ else:
         st.warning("No pages found inside 'pages' directory.")
     else:
         for file in sorted(page_files):
-            page_name = file.replace(".py", "").replace("_", " ").title()
+            page_name = file.replace(".py", "").replace("_", " ").capitalize()
             if st.button(page_name):
                 file = f"pages/{file}"
                 st.switch_page(file)

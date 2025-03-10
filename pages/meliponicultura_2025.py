@@ -16,23 +16,6 @@ def plot_tipo1(dataset, columna, titulo, textposition='auto'):
         marker=dict(line=dict(color='#000000', width=2))
     )
     return plot
-def plot_tipo2(dataframe, lista_categorias, columna, titulo, textposition='auto'):
-    df_temp = dataframe[columna]
-    df = []
-    for i in df_temp:
-        found_categories = [categoria for categoria in lista_categorias if categoria.lower() in str(i).lower()]
-        df.append(found_categories)
-    df = pd.DataFrame({'categorias': [cat for cats in df for cat in (cats if cats else [None])]})
-    plot = px.pie(df, names="categorias", title=titulo)
-    plot.update_traces(
-        textposition=textposition,
-        textinfo='percent+label+value',
-        hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
-    )
-    return plot
-def concatenate_values(series):
-    return ','.join(str(v) for v in series if pd.notna(v)) if  (v for v in series) is int else lambda x: ','.join(sorted(set(str(v) for v in x if pd.notna(v))))
 def replace_values(value):
     if isinstance(value, str):  # Ensure it's a string
         parts = value.split(" ")  # Split by spaces
