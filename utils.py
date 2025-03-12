@@ -47,6 +47,25 @@ def read_data(tablename):
             cur.close()
             conn.close()
 
+def read_data_1(tablename):
+    conn = None
+    try:
+        conn = connect_to_db()
+        cur = conn.cursor()
+        
+        cur.execute(f"SELECT productor,variedad, venta FROM \"{tablename}\"")
+        data = cur.fetchall()
+        
+        return data
+        
+    except Exception as e:
+        print(f"Database error: {e}")
+        return None
+    finally:
+        if conn:
+            cur.close()
+            conn.close()
+
 
 # Function to read data from secondary table (Structure is always name | label)
 def read_data_helper_table(secondtable):

@@ -274,6 +274,206 @@ variedades = [
     "Sac-Beh Blanco",
 ]
 
+
+table2 = st.expander('Producción', icon=":material/inventory_2:")
+sorted_variedades = sorted(variedades, key=lambda x: len(x), reverse=True)
+
+def split_variedad(s):
+    s = str(s).strip()
+    varieties = []
+    remaining = s
+    while remaining:
+        found = False
+        for var in sorted_variedades:
+            if remaining.startswith(var):
+                varieties.append(var)
+                remaining = remaining[len(var):].strip()
+                found = True
+                break
+        if not found:
+            # Handle unmatched parts; appends an error indicator for visibility
+            varieties.append(f"ERROR:{remaining}")
+            break
+    return varieties
+
+# Read the dataset
+
+
+# Columns to split into lists
+list_columns = [
+    'Folio de las bolsas',
+    'Humedad',
+    'Granos quebrados',
+    'Impurezas',
+    'Color uniforme',
+    'Olor',
+    'Peso bruto',
+    'Comentarios'
+]
+
+# Process 'Variedad' column
+grouped['Variedad'] = grouped['Variedad'].apply(split_variedad)
+
+# Process list columns by splitting comma-separated values
+for col in list_columns:
+    grouped[col] = grouped[col].apply(
+        lambda x: [item.strip() for item in str(x).split(',')] if pd.notna(x) else []
+    )
+
+# Verify that all list columns have the same length as 'Variedad' (optional)
+# This step checks for mismatches in list lengths
+grouped['Variedad_length'] = grouped['Variedad'].apply(len)
+for col in list_columns:
+    grouped[f'{col}_length'] = grouped[col].apply(len)
+    mismatch = grouped[grouped['Variedad_length'] != grouped[f'{col}_length']]
+    if not mismatch.empty:
+        print(f"Mismatch found in column {col}. Please check the following rows:")
+        print(mismatch.index.tolist())
+
+# Explode all relevant columns to create individual rows
+explode_cols = ['Variedad'] + list_columns
+grouped_exploded = grouped.explode(explode_cols)
+
+# Convert numeric columns to appropriate data types
+numeric_cols = ['Humedad', 'Granos quebrados', 'Impurezas', 'Color uniforme', 'Peso bruto']
+for col in numeric_cols:
+    grouped_exploded[col] = pd.to_numeric(grouped_exploded[col], errors='coerce')
+
+# Handle empty strings in 'Comentarios'
+grouped_exploded['Comentarios'] = grouped_exploded['Comentarios'].replace('', pd.NA)
+
+# Drop the temporary length columns if they were created
+if 'Variedad_length' in grouped_exploded.columns:
+    grouped_exploded.drop(columns=['Variedad_length'] + [f'{col}_length' for col in list_columns], errors='ignore', inplace=True)
+
+# Reset index for a clean output
+grouped_exploded.reset_index(drop=True, inplace=True)
+grouped_exploded.drop(columns=['ID'],inplace=True)
+
+validation_rules = {
+    "Humedad": {"max": 11.5},          # Must be ≤ 11.5%
+    "Granos quebrados": {"max": 1.0},  # Must be ≤ 1.0%
+    "Impurezas": {"max": 1.0},         # Must be ≤ 1.0%
+    "Color uniforme": {"min": 98.0},   # Must be ≥ 98.0%
+    "Olor": {"valid_values": ["OK"]},  # Must be "OK"
+    "Peso bruto": {"min": 25.2}        # Must be ≥ 25.2 kg
+}
+
+def colorize_value(val, column_name):
+    if pd.isna(val):
+        return "background-color: red"  # Missing values fail
+    
+    rule = validation_rules.get(column_name, {})
+    
+    # Numeric checks
+    if "max" in rule:
+        return "background-color: #d0f0ca" if val <= rule["max"] else "background-color: #e97c58"
+    elif "min" in rule:
+        return "background-color: #d0f0ca" if val >= rule["min"] else "background-color: #e97c58"
+    
+    # Categorical checks (e.g., "Olor")
+    if "valid_values" in rule:
+        return "background-color: #d0f0ca" if val in rule["valid_values"] else "background-color: #e97c58"
+    
+    return ""  # No styling for other columns
+
+# Apply styling to relevant columns
+styled_df = (
+    grouped_exploded.style
+    .applymap(lambda x: colorize_value(x, "Humedad"), subset=["Humedad"])
+    .applymap(lambda x: colorize_value(x, "Granos quebrados"), subset=["Granos quebrados"])
+    .applymap(lambda x: colorize_value(x, "Impurezas"), subset=["Impurezas"])
+    .applymap(lambda x: colorize_value(x, "Color uniforme"), subset=["Color uniforme"])
+    .applymap(lambda x: colorize_value(x, "Olor"), subset=["Olor"])
+    .applymap(lambda x: colorize_value(x, "Peso bruto"), subset=["Peso bruto"])
+    .set_table_styles([{
+        "selector": "td",
+        "props": [("text-align", "center"), ("padding", "5px")]
+    }])
+)
+
+to_join = utils.read_data_1('milpa_sustentable')
+
+# Create a DataFrame from to_join with appropriate column names
+df_to_join = pd.DataFrame(to_join, columns=["Productor", "Variedad", "A vender"])
+
+# Join the DataFrame on "Productor" and "Variedad" and update grouped_exploded
+grouped_exploded = grouped_exploded.merge(df_to_join, on=["Productor", "Variedad"], how="left")
+grouped_exploded["A vender"] = grouped_exploded["A vender"].fillna("Sin información")
+
+
+
+with table2:
+    # Define improved color scheme
+    GROUP_COLOR = "#b9d6c7"  # Very pale green for group background
+    PASS_COLOR = "#d0f0ca"   # Darker green with better contrast
+    FAIL_COLOR = "#f59d7f"   # Light red
+
+    # Custom CSS for better visibility
+    st.markdown(f"""
+        <style>
+            .dataframe td {{
+                color: black !important;
+                font-weight: 500;
+            }}
+            .dataframe th {{
+                background-color: {GROUP_COLOR} !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+
+    def style_groups_and_validation(df):
+        # Initialize style DataFrame
+        styles = pd.DataFrame('', index=df.index, columns=df.columns)
+        current_producer = None
+        
+        for idx, row in df.iterrows():
+            # Add group background for producer
+            if row['Productor'] != current_producer:
+                styles.iloc[idx] = f'background-color: {GROUP_COLOR}; border-top: 2px solid white;'
+                current_producer = row['Productor']
+            
+            # Apply validation colors
+            for col in validation_rules.keys():
+                val = row[col]
+                rule = validation_rules[col]
+                
+                if pd.isna(val):
+                    styles.loc[idx, col] = f'background-color: {FAIL_COLOR};'
+                    continue
+                    
+                if col == 'Olor':
+                    valid = val in rule['valid_values']
+                elif 'max' in rule:
+                    valid = val <= rule['max']
+                elif 'min' in rule:
+                    valid = val >= rule['min']
+                    
+                color = PASS_COLOR if valid else FAIL_COLOR
+                styles.loc[idx, col] = f'background-color: {color}; font-weight: bold;'
+                
+        return styles
+
+    # Apply styling
+    styled_df = (
+        grouped_exploded.style
+        .apply(style_groups_and_validation, axis=None)
+        .format(precision=2)
+        .set_properties(**{'text-align': 'center', 'padding': '8px'})
+        .set_table_styles([{
+            'selector': 'td',
+            'props': [('border', '1px solid white')]
+        }])
+    )
+
+    # Display in Streamlit
+    st.title("Control de calidad")
+
+
+    st.write(styled_df.to_html(escape=False), unsafe_allow_html=True)
+
+
+
 plots_exp = st.expander("Gráficas generales", icon=":material/bar_chart:")
 
 try:
@@ -283,7 +483,7 @@ try:
         cols = st.columns(2)
         
         with cols[0]:
-            pie1 = px.pie(plot_df, 'Momento del registro', title='Distribución del momento de registro')
+            pie1 = px.pie(plot_df, 'Momento del registro', title='Distribución del momento de registro',color='Momento del registro')
             st.plotly_chart(pie1)
 
         with cols[1]:
@@ -300,7 +500,8 @@ try:
                     x=list(variedad_counts.keys()),
                     y=list(variedad_counts.values()),
                     labels={'x': 'Variedad', 'y': 'Conteo'},
-                    title='Conteo de variedades'
+                    title='Conteo de variedades',
+                    color=list(variedad_counts.keys())
                 )
                 st.plotly_chart(bar1)
 
@@ -343,9 +544,10 @@ try:
             for _, row in compliance_df.iterrows():
                 avg_value = row.get(f'{metric}_avg', 'N/A')
                 compliant = row.get(f'{metric}_compliant' if metric != 'Olor' else 'Olor_compliant', False)
+                #st.write(compliance_df)
                 hover_text = (
                     f"Productor: {row['Productor']}<br>"
-                    f"Valor: {avg_value}{metrics_info[metric]['unit'] if metric != 'Olor' else ''}<br>"
+                    f"Valor: {avg_value}{metrics_info[metric]['unit'] if metric != 'Olor' else compliance_df['Olor_compliant'][_]}<br>"
                     f"Cumple: {'Sí' if compliant else 'No'}"
                 )
                 metric_data.append({
@@ -363,12 +565,12 @@ try:
                 color_discrete_map={'Cumple': '#00C853', 'No cumple': '#FF1744'},
                 title=title,
                 hover_name='Hover',
+                #hover_data='Hover',
                 hole=0.35
             )
             fig.update_traces(
                 textposition='auto',
                 textinfo='label+value',
-                hovertemplate="%{hoverName}<extra></extra>",
                 marker=dict(line=dict(color='white', width=1)))
             fig.update_layout(showlegend=False, uniformtext_minsize=10)
             
