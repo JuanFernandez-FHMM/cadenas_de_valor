@@ -8,6 +8,7 @@ import time
 import folium
 from streamlit_folium import folium_static
 
+utils.logged_in(st.session_state)
 
 def clean_data(tablename, secondtable):
     # Read data using utils, now fetching both flat_data and second_table
@@ -124,6 +125,7 @@ gb.configure_selection(
     selection_mode="multiple",
     use_checkbox=True,
     pre_selected_rows=[],
+    header_checkbox=True,
     suppressRowDeselection=False
 )
 gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')

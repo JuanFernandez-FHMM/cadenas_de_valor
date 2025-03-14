@@ -6,3 +6,5 @@ plotly
 folium
 streamlit_folium
 geopy
+supabase
+streamlit_extras

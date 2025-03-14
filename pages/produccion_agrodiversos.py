@@ -2,6 +2,9 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder
 import utils
 import pandas as pd
+import plotly.express as px
+
+utils.logged_in(st.session_state)
 
 
 def clean_data(tablename):
@@ -91,6 +94,7 @@ gb.configure_selection(
     selection_mode="multiple",
     use_checkbox=True,
     pre_selected_rows=[],
+    header_checkbox=True,
     suppressRowDeselection=False
 )
 gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')
@@ -130,5 +134,45 @@ else:
 
 if not selected_df.empty:
 
+    grouped_df = selected_df.groupby(['producto', 'comunidad']).agg({
+        'cantidad_cosecha': 'sum',
+        'cantidad_comercializar': 'sum'
+    }).reset_index()
 
-    col1, col2 = st.columns(2)
+    # Melt the dataframe for easier plotting
+    melted_df = grouped_df.melt(
+        id_vars=['producto', 'comunidad'],
+        value_vars=['cantidad_cosecha', 'cantidad_comercializar'],
+        var_name='Metrica',
+        value_name='Cantidad'
+    )
+
+    # Create interactive Plotly visualization
+    fig = px.bar(
+        melted_df,
+        x='producto',
+        y='Cantidad',
+        color='Metrica',
+        barmode='group',
+        #facet_col='comunidad',
+        facet_row='comunidad',
+        labels={'Cantidad': 'Total', 'Producto': 'Producto'},
+        height=800,
+        color_discrete_sequence=px.colors.qualitative.Pastel
+    )
+
+    # Update layout for better readability
+    fig.update_layout(
+        legend_title_text='Métricas',
+        hovermode='x unified',
+        showlegend=True,
+        margin=dict(l=50, r=50, t=80, b=50)
+    )
+
+    # Update facet labels
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+
+    # Use Streamlit columns for layout
+    col1, col2 = st.columns([0.8, 0.2])
+    with col1:
+        st.plotly_chart(fig, use_container_width=True)

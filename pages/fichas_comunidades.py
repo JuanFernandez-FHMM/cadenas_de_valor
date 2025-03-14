@@ -7,6 +7,8 @@ import folium
 from streamlit_folium import folium_static
 import branca
 
+utils.logged_in(st.session_state)
+
 def clean_data(tablename,secondtable):
     
     
@@ -317,6 +319,7 @@ def get_data():
         pre_selected_rows=[],
         selection_mode="multiple",
         use_checkbox=True,
+        header_checkbox=True,
         suppressRowDeselection=False
     )
     gb.configure_side_bar(filters_panel=True, defaultToolPanel='filters')

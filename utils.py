@@ -1,8 +1,8 @@
 from psycopg2.extras import DictCursor, Json
 import psycopg2
 import re
-from streamlit import secrets
-
+from streamlit import secrets, warning, switch_page, stop
+import time
 
 # Read database credentials for Streamlit
 db_credentials = {
@@ -104,3 +104,12 @@ def extract_type(product):
         match = re.search(r'\(([^()]*)\)$', product)  # Extract last parentheses content
         return match.group(1) if match else 'Unknown'
         
+
+def logged_in(session_state):
+    if 'logged_in' not in session_state or not session_state.logged_in:
+        warning("Debe iniciar sesión para acceder a esta página.\nRedireccionando...")
+        time.sleep(3)
+        switch_page("pagina_principal.py")  # Adjust the main page filename if needed
+        stop()
+
+    return 

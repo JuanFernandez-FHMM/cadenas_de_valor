@@ -7,6 +7,7 @@ import plotly.express as px
 import folium
 from streamlit_folium import folium_static
 
+utils.logged_in(st.session_state)
 
 ######################################################
 ### SPECIFIC CLEANNING DATA FUNCTION FOR EACH PAGE ###
@@ -374,6 +375,7 @@ gb.configure_selection(
     pre_selected_rows=[],
     selection_mode="multiple",
     use_checkbox=True,
+    header_checkbox=True,
     suppressRowDeselection=False
 )
 

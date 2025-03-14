@@ -7,6 +7,8 @@ import re
 import io
 import json
 
+utils.logged_in(st.session_state)
+
 def replace_values(value):
     if isinstance(value, str):  # Ensure it's a string
         parts = value.split(" ")  # Split by spaces
@@ -581,7 +583,6 @@ try:
                 cols_pies = st.columns(3)
 
 except Exception as e:
-    raise e
     st.warning(f"Error generando visualizaciones: {str(e)}")
 
 # KPI section

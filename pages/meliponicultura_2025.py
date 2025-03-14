@@ -5,7 +5,11 @@ import pandas as pd
 import plotly.express as px
 import io
 import re
+import numpy as np
 
+
+
+utils.logged_in(st.session_state)
 
 def plot_tipo1(dataset, columna, titulo, textposition='auto'):
     plot = px.pie(dataset, names=columna, title=titulo)
@@ -91,11 +95,13 @@ else:
 
 
 columns_to_replace = [
-    'estado','municipio','localidad','grupo','persona', 'repeat_persona_edadsexo.repeat_persona_edadsexo/sexo_persona', 'repeat_otros.repeat_otros/sexo',
+    'estado','municipio','localidad','grupo', 'repeat_persona_edadsexo.repeat_persona_edadsexo/sexo_persona', 'repeat_otros.repeat_otros/sexo',
     'abejas', 'repeat_abejas.repeat_abejas/productos', 'factura','ciclo','pract_conserv', 'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/compradores',
     'repeat_practicas.repeat_practicas/capacitador','convenios', 'repeat_convenios.repeat_convenios/conv_prov','conserv_abejas','alimentacion',
     'acces_ubi', 'infra', 'acom', 'lim', 'herr', 'agro','herr_equipo','trab','auto',
     ]
+df2 = df.copy()
+columns_to_replace.append('persona')
 
 for col in columns_to_replace:
         
@@ -109,6 +115,25 @@ df.drop(columns=["repeat_persona_edadsexo_count", "repeat_abejas_count",'repeat_
                 inplace=True)
 
 
+
+for col in columns_to_replace:
+    if col == 'persona':
+        # Split into keys, replace each, and return a list of full names
+        df2[col] = df2[col].apply(
+            lambda x: [secondtable_dict.get(part, part) for part in str(x).split()] 
+            if pd.notnull(x) and isinstance(x, str) 
+            else []
+        )
+    else:
+        df2[col] = df2[col].apply(replace_values)
+
+# Explode the persona column to create individual rows per person
+df2 = df2.explode('persona')
+
+# Create final personas table
+personas_df = df2[['_id', 'localidad', 'grupo', 'persona']].drop_duplicates().reset_index(drop=True)
+
+#st.table(personas_df)
 
 #######################
 ###### STREAMLIT ######
@@ -130,7 +155,7 @@ if st.button("Página principal"):
 ########################
 ##### FIRST TABLE ######
 ########################
-
+#st.write(secondtable_dict)
 tb_principal = st.expander("Tabla principal", icon=":material/table_view:")
 
 with tb_principal:
@@ -449,6 +474,7 @@ with st.container(border=True):
 
             gb3.configure_grid_options(columnSize="sizeToFit")
 
+
             gb3.configure_selection(
                 selection_mode="multiple",
                 use_checkbox=True,
@@ -494,11 +520,208 @@ with st.container(border=True):
     else:
         st.write("No hay filas seleccionadas")
 
+###########################
+#### TABLA DE PERSONAS ####
+###########################
+
+# make new df with columns 'id', 'localidad', 'grupo' and 'persona'
+# persona will count every different person on the actual df'Persona', they are separated by spaces but names contain spaces in them, so use secondary to extract all different people
+# we will have a table for all 'persona' by group, localidad and id
+
+#st.subheader('Productores')
+productores = st.expander('Productores',expanded=False)
+with productores:
+    #st.write('s')
+
+    gb = GridOptionsBuilder.from_dataframe(personas_df)
+
+    gb.configure_side_bar(filters_panel=True)
+
+    gb.configure_default_column(
+        groupable=True,
+        value=True,
+        enableRowGroup=True,
+        aggFunc='sum',
+        filter='agTextColumnFilter',
+        # Add these options for better auto-sizing
+        resizable=True,
+        autoHeight=True,
+        wrapText=True,
+        # This will make columns fit their content
+        autoSizeColumns=True
+    )
+
+    gb.configure_grid_options(columnSize="sizeToFit")
+
+    gb.configure_selection(
+        selection_mode="multiple",
+        use_checkbox=True,
+        pre_selected_rows=[],
+        header_checkbox=True,
+        suppressRowDeselection=False
+    )
+
+    grid_options = gb.build()
+
+    grid_response = AgGrid(
+        personas_df,
+        gridOptions=grid_options,
+        fit_columns_on_grid_load=True,  # This is important
+        allow_unsafe_jscode=True,
+        update_mode='SELECTION_CHANGED',
+        theme='fresh'
+    )
+
+    selected_rows = grid_response['selected_rows']
+
+    selected_df = pd.DataFrame(selected_rows)
+
+    if not selected_df.empty:
+
+        csv_data = convert_df_to_csv(selected_df)
+
+        st.download_button(
+            label="Descargar CSV",
+            data=csv_data,
+            file_name="data.csv",
+            mime="text/csv",
+            key="second"
+        )
+
+    try:
+            # plots
+        personas_df['grupo_id'] = personas_df['_id'].astype(str).str[-4:] + ' - ' + personas_df['grupo']
+
+        # Contamos el número de productores por grupo
+        conteo_por_grupo = personas_df.groupby(['grupo_id', 'localidad', 'grupo']).size().reset_index(name='cantidad_productores')
+
+        # Ordenamos por cantidad de productores (descendente)
+        conteo_por_grupo = conteo_por_grupo.sort_values('cantidad_productores', ascending=False)
+
+        # Gráfico de barras: Número de productores por grupo
+        fig1 = px.bar(
+            conteo_por_grupo,
+            x='grupo_id',
+            y='cantidad_productores',
+            color='localidad',
+            text='cantidad_productores',
+            title='Número de Productores por Grupo',
+            labels={
+                'grupo_id': 'Grupo (ID - Nombre)',
+                'cantidad_productores': 'Número de Productores',
+                'localidad': 'Localidad'
+            },
+            color_discrete_sequence=px.colors.qualitative.Vivid,
+            height=600
+        )
+
+        fig1.update_layout(
+            xaxis_tickangle=-45,
+            font=dict(size=12)
+        )
+
+        # Gráfico de pastel: Distribución de productores por localidad
+        conteo_por_localidad = personas_df.groupby('localidad').size().reset_index(name='cantidad_productores')
+        fig2 = px.pie(
+            conteo_por_localidad,
+            values='cantidad_productores',
+            names='localidad',
+            title='Distribución de Productores por Localidad',
+            color_discrete_sequence=px.colors.qualitative.Bold,
+            hole=0.3
+        )
+        fig2.update_traces(textinfo='percent+value')
+
+        # Gráfico de treemap: Jerarquía de localidad -> grupo -> número de productores (valor agregado por slice)
+        fig3 = px.treemap(
+            personas_df.assign(value=1),  # Asigna el valor '1' a cada productor
+            path=['localidad', 'grupo_id'],
+            values='value',
+            title='Distribución Jerárquica de Productores por Localidad y Grupo',
+            color_discrete_sequence=px.colors.qualitative.Pastel
+        )
+
+        conteo_grupo_localidad = personas_df.groupby(['localidad', 'grupo_id', 'grupo']).size().reset_index(name='cantidad_productores')
+
+        # Conteo de personas solo por localidad (para el mapa de burbujas)
+        conteo_por_localidad = personas_df.groupby('localidad').size().reset_index(name='cantidad_productores')
+
+        # Coordenadas aproximadas para las localidades en la Península de Yucatán (esto debería ser reemplazado con coordenadas reales)
+        # Estas son coordenadas ficticias para demostración - necesitarás coordenadas reales para un uso práctico
+        coordenadas = {
+            "Temozón": {"lat": 20.8046396, "lon": -88.2220431},
+            "Granada (Chican Granada)": {"lat": 20.5791081, "lon": -90.0531311},
+            "Pakchén": {"lat": 19.5281067, "lon": -89.7985086},
+            "Quetzal Edzná": {"lat": 19.459534, "lon":-90.1082347},
+            "X-Kanchakán": {"lat": 20.6244424, "lon": -89.5116471},
+            "Tixcacaltuyub": {"lat": 20.4920897, "lon": -88.9257571}
+        }
+
+        # Añadir coordenadas al DataFrame
+        conteo_por_localidad['lat'] = conteo_por_localidad['localidad'].map(lambda x: coordenadas[x]['lat'])
+        conteo_por_localidad['lon'] = conteo_por_localidad['localidad'].map(lambda x: coordenadas[x]['lon'])
+
+        # Crear un mapa de burbujas
+        fig = px.scatter_mapbox(
+            conteo_por_localidad,
+            lat="lat",
+            lon="lon",
+            size="cantidad_productores",
+            color="localidad",
+            hover_name="localidad",
+            hover_data=["cantidad_productores"],
+            title="Distribución de Productores por Localidad",
+            mapbox_style="carto-positron",
+            zoom=7,
+            size_max=30,
+            color_discrete_sequence=px.colors.qualitative.Vivid
+        )
+
+        # Añadir información sobre los grupos en cada localidad como texto en el hover
+        grupos_por_localidad = personas_df.groupby(['localidad', 'grupo_id']).size().reset_index(name='conteo')
+        grupos_info = {}
+
+        for localidad in grupos_por_localidad['localidad'].unique():
+            grupos_info[localidad] = "<br>".join([
+                f"{row['grupo_id']}: {row['conteo']} productores" 
+                for _, row in grupos_por_localidad[grupos_por_localidad['localidad'] == localidad].iterrows()
+            ])
+
+        fig.update_traces(
+            hovertemplate="<b>%{hovertext}</b><br><br>" +
+                        "Localidad: %{customdata[0]}<br>" +
+                        "Total productores: %{marker.size}<br><br>" +
+                        "<b>Grupos:</b><br>%{customdata[1]}<extra></extra>",
+            customdata=[[loc, grupos_info.get(loc, "No hay grupos")] for loc in conteo_por_localidad['localidad']]
+        )
+
+        fig.update_layout(
+            font=dict(family="Arial", size=14),
+            title=dict(font=dict(size=20)),
+            margin=dict(l=0, r=0, t=40, b=0),
+            height=600,
+            width=800
+        )
+
+        #fig.show()
+
+
+        columns = st.columns(2)
+        with columns[0]:
+            st.plotly_chart(fig1)
+            st.plotly_chart(fig3)
+        with columns[1]:
+            st.plotly_chart(fig2)
+            st.plotly_chart(fig)
+    except:
+        st.write('Hubo un error al tratar de generar las gráficas.')
+
+
 ########################
 ##### PLOTS ###########
 ########################
 
-st.subheader("Gráficos")
+#st.subheader("Gráficos")
 
 plots = st.expander("Gráficos", expanded=False)
 

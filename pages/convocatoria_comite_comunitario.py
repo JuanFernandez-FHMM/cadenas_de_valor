@@ -3,6 +3,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 import utils
 import pandas as pd
 
+utils.logged_in(st.session_state)
+
 tablename = 'convocatoria_comite_comunitario_2025'
 secondtable = 'convocatoria_comite_comunitario_data'
 
@@ -93,6 +95,7 @@ gb.configure_selection(
     pre_selected_rows=[],
     selection_mode="multiple",
     use_checkbox=True,
+    header_checkbox=True,
     suppressRowDeselection=False
 )
 
