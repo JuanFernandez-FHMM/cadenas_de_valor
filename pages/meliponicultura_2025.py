@@ -529,7 +529,7 @@ with st.container(border=True):
 # we will have a table for all 'persona' by group, localidad and id
 
 #st.subheader('Productores')
-productores = st.expander('Productores',expanded=False)
+productores = st.expander('Productores',expanded=False,icon=':material/group:')
 with productores:
     #st.write('s')
 
@@ -723,7 +723,7 @@ with productores:
 
 #st.subheader("Gráficos")
 
-plots = st.expander("Gráficos", expanded=False)
+plots = st.expander("Gráficos", expanded=False,icon=':material/bar_chart:')
 
 with plots:
     try:

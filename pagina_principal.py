@@ -2,15 +2,36 @@ import streamlit as st
 import os
 from supabase import create_client, Client
 from streamlit_extras.switch_page_button import switch_page
-
-
+import streamlit_card as st_card
+from streamlit_option_menu import option_menu
 
 st.set_page_config(
     page_title="Sistema de Proyectos Comunitarios",
     page_icon="🌱",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items={
+        'Get Help': 'https://www.example.com/help',
+        'Report a bug': 'https://www.example.com/bug',
+        'About': 'Sistema de gestión para Proyectos Comunitarios'
+    }
 )
+
+# Custom theme colors
+primary_color = "#4CAF50"  # Green shade for community/ecological theme
+
+# Apply custom styles
+st.markdown("""
+<style>
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    [data-testid="stHeader"] {
+        background-color: #f0f8f0;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 url: str = st.secrets.supabase.url
 key: str = st.secrets.supabase.key
@@ -22,79 +43,234 @@ def login_section():
         st.session_state.logged_in = False
 
     if not st.session_state.logged_in:
-        st.title("Acceso al Sistema 🔒")
-        
-        with st.form("login_form"):
-            password = st.text_input("Contraseña de acceso:", type="password")
-            submit = st.form_submit_button("Ingresar")
+        cols = st.columns([1, 2, 1])
+        with cols[1]:
+            st.title("Sistema de Proyectos Comunitarios 🌱")
             
-            if submit:
-                if password == st.secrets.login_credentials.psswrd:
-                    st.session_state.logged_in = True
-                    st.rerun()
-                else:
-                    st.error("Contraseña incorrecta. Intente nuevamente.")
+            # Create a visually appealing login card
+            with st.container():
+                st.subheader("Acceso al Sistema 🔒")
+                
+                # Create tabs for login methods (even if we only use password for now)
+                tab1, tab2 = st.tabs(["Acceso con Contraseña", "Información"])
+                
+                with tab1:
+                    with st.form("login_form"):
+                        password = st.text_input("Contraseña de acceso:", type="password")
+                        submit = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
+                        
+                        if submit:
+                            if password == st.secrets.login_credentials.psswrd:
+                                st.session_state.logged_in = True
+                                st.rerun()
+                            else:
+                                st.error("Contraseña incorrecta. Intente nuevamente.")
+                
+
+                with tab2:
+                    st.info("Este sistema permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador.")
         return True
     return False
 
 if login_section():
     st.stop()
 
-st.markdown("## Proyectos disponibles :floppy_disk:")
-st.info("Has click en una página para ver los datos.")
-st.markdown("---")
+# Main navigation section after login
+st.title("Sistema de Proyectos Comunitarios 🌱")
 
-# Create a container for the navigation section
-with st.container():
-    # Add a header
-    st.header("Application Navigation")
+
+# Display a status indicator for logged-in user
+with st.sidebar:
+    st.success("✅ Usuario autenticado")
+    if st.button("Cerrar Sesión"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+# Create top navigation with option_menu
+selected = option_menu(
+    menu_title=None,
+    options=["Proyectos", "Documentación", "Contacto"],
+    icons=["folder", "book", "envelope"],
+    menu_icon="list",
+    default_index=0,
+    orientation="horizontal",
+    styles={
+        "container": {"padding": "0!important", "background-color": "#f0f8f0"},
+        "icon": {"color": primary_color, "font-size": "18px"},
+        "nav-link": {"font-size": "16px", "text-align": "center", "margin": "0px", "--hover-color": "#eee"},
+        "nav-link-selected": {"background-color": primary_color},
+    }
+)
+
+if selected == "Proyectos":
+
     
-    # Add a divider for better visual separation
+    st.info("Seleccione un proyecto para ver sus detalles.")
     st.divider()
-    
-    pages_dir = "pages"
-    if not os.path.exists(pages_dir):
-        st.error("No se encontró el directorio 'pages'. Favor de notificar al administrador.")
-    else:
-        page_files = [f for f in os.listdir(pages_dir) if f.endswith(".py")]
+
+    # Create a visually enhanced container for navigation
+    with st.container():
+        st.subheader("Navegación de Proyectos")
         
-        if not page_files:
-            st.warning("No pages found inside 'pages' directory.")
+        pages_dir = "pages"
+        if not os.path.exists(pages_dir):
+            st.error("No se encontró el directorio 'pages'. Favor de notificar al administrador.")
         else:
-            # Create the navigation section with a card
-            with st.container():
-                # Use 3 columns for the buttons
-                cols = st.columns(3)
-                
-                # Distribute buttons across columns
-                for idx, file in enumerate(sorted(page_files)):
-                    page_name = file.replace(".py", "").replace("_", " ").title()
-                    col_idx = idx % 3
+            page_files = [f for f in os.listdir(pages_dir) if f.endswith(".py")]
+            
+            if not page_files:
+                st.warning("No se encontraron páginas en el directorio 'pages'.")
+            else:
+                # Use simple container with borders for better visual organization
+                with st.container(border=True):
+                    # Create a grid of 3 columns for buttons
+                    cols = st.columns(3)
                     
-                    # Place button in the appropriate column
-                    with cols[col_idx]:
-                        # Use st.button with custom key and styling options
-                        button_key = f"nav_button_{idx}"
+                    # Distribute buttons across columns
+                    for idx, file in enumerate(sorted(page_files)):
+                        page_name = file.replace(".py", "").replace("_", " ").title()
+                        col_idx = idx % 3
                         
-                        # Streamlit's button with native styling
-                        if st.button(
-                            page_name, 
-                            key=button_key,
-                            use_container_width=True  # Makes button fill the column width
-                        ):
-                            target_page = f"pages/{file}"
-                            try:
-                                st.switch_page(target_page)
-                            except Exception as e:
-                                st.error(f"Error navigating to {page_name}: {str(e)}")
-                                st.info("Please try again or reload the page.")
+                        # Place button in the appropriate column with improved styling
+                        with cols[col_idx]:
+                            # Use a container to add padding and spacing around each button
+                            with st.container():
+                                # Standard streamlit button with use_container_width
+                                if st.button(f"📁 {page_name}", 
+                                            key=f"btn_{idx}", 
+                                            use_container_width=True):
+                                    try:
+                                        st.switch_page(f"pages/{file}")
+                                    except Exception as e:
+                                        st.error(f"Error navigating to {page_name}: {str(e)}")
+                                        st.info("Please try again or reload the page.")
+                            
+                            # Add some space between buttons
+                            st.write("")
+
+elif selected == "Documentación":
+    st.header("Documentación y Ayuda 📚")
     
-    # Add some spacing at the bottom
-    st.write("")
+    # Video tutorial section
+    with st.expander("Guía para el uso de la plataforma", expanded=False):
+        video_url = "https://www.youtube.com/watch?v=Ukre4MMCQfo"
+        st.video(video_url)
+    
+   
 
-
-video_url = f"https://www.youtube.com/watch?v=Ukre4MMCQfo"
-
-with st.expander("Guía para el uso de la página"):	
-    container = st.container(border=True,)
-    container.video(video_url)
+elif selected == "Contacto":
+    st.header("Contacto y Soporte 📧")
+    
+    contact_cols = st.columns([3,1])
+    with contact_cols[0]:
+        st.subheader("Formulario de Contacto")
+        
+        with st.form("contact_form"):
+            name = st.text_input("Nombre", key="contact_name")
+            email = st.text_input("Correo electrónico", key="contact_email")
+            inquiry_type = st.selectbox("Tipo de consulta", ["Soporte técnico", "Información general", "Reportar un error"])
+            message = st.text_area("Mensaje", height=150)
+            submit = st.form_submit_button("Enviar consulta")
+            
+            if submit:
+                # Basic validation
+                if not name or not email or not message:
+                    st.error("Por favor complete todos los campos obligatorios")
+                else:
+                    try:
+                        # Create data dictionary
+                        data = {
+                            "name": name.strip(),
+                            "email": email.strip(),
+                            "inquiry_type": inquiry_type,
+                            "message": message.strip()
+                        }
+                        
+                        # Insert into Supabase
+                        response = supabase.table('contact_queries').insert(data).execute()
+                        
+                        if len(response.data) > 0:
+                            st.success("Consulta enviada exitosamente! Nos pondremos en contacto pronto.")
+                        else:
+                            st.error("Error al enviar la consulta. Por favor intente nuevamente.")
+                    except Exception as e:
+                        st.error(f"Error en el sistema: {str(e)}")
+    
+    with contact_cols[1]:
+        st.subheader("Información de Contacto")
+        st.info("""    
+        - juan.fernandez@fhmm.org
+        - david.contreras@fhmm.org
+        """)
+        
+        # Admin section
+        st.divider()
+        st.subheader("Área de Admin")
+        
+        # Password input
+        admin_pass = st.text_input("Contraseña admin:", type="password")
+        
+        # Initialize session state for admin auth
+        if 'admin_authenticated' not in st.session_state:
+            st.session_state.admin_authenticated = False
+            
+        if admin_pass or st.session_state.admin_authenticated:
+            if admin_pass == st.secrets.admin.password or st.session_state.admin_authenticated:
+                st.session_state.admin_authenticated = True
+                
+                # Fetch active queries
+                try:
+                    response = supabase.table('contact_queries')\
+                                        .select('*')\
+                                        .eq('status', True)\
+                                        .execute()
+                    active_queries = response.data
+                except Exception as e:
+                    st.error(f"Error fetching queries: {str(e)}")
+                    active_queries = []
+                
+                if active_queries:
+                    st.success(f"Consultas activas ({len(active_queries)})")
+                    
+                    # Display active queries
+                    for query in active_queries:
+                        with st.expander(f"ID: {query['id']} - {query['name'][:20]}..."):
+                            st.markdown(f"""
+                            **Nombre:** {query['name']}  
+                            **Email:** {query['email']}  
+                            **Tipo:** {query['inquiry_type']}  
+                            **Mensaje:**  
+                            {query['message']}
+                            """)
+                    
+                    # Form to update status
+                    with st.form("update_status"):
+                        st.write("Marcar consulta como resuelta")
+                        query_id = st.number_input("ID de consulta",value=0)
+                        submit_update = st.form_submit_button("Actualizar estado")
+                        
+                        if submit_update:
+                            try:
+                                # Check if ID exists in active queries
+                                if not any(q['id'] == query_id for q in active_queries):
+                                    st.error("ID no válido o ya resuelto")
+                                else:
+                                    # Update status in Supabase
+                                    update_response = supabase.table('contact_queries')\
+                                                        .update({'status': False})\
+                                                        .eq('id', query_id)\
+                                                        .execute()
+                                    
+                                    if len(update_response.data) > 0:
+                                        st.success(f"Consulta {query_id} marcada como resuelta")
+                                        # Force refresh by rerunning
+                                        st.rerun()
+                                    else:
+                                        st.error("Error al actualizar")
+                            except Exception as e:
+                                st.error(f"Error de actualización: {str(e)}")
+                else:
+                    st.info("No hay consultas activas")
+                
+            else:
+                st.error("Contraseña incorrecta")
