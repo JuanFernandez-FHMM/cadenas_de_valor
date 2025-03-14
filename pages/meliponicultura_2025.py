@@ -654,7 +654,8 @@ with productores:
             "Pakchén": {"lat": 19.5281067, "lon": -89.7985086},
             "Quetzal Edzná": {"lat": 19.459534, "lon":-90.1082347},
             "X-Kanchakán": {"lat": 20.6244424, "lon": -89.5116471},
-            "Tixcacaltuyub": {"lat": 20.4920897, "lon": -88.9257571}
+            "Tixcacaltuyub": {"lat": 20.4920897, "lon": -88.9257571},
+            "Tankuché": {'lat':20.5078621, "lon":-90.2484375}
         }
 
         # Añadir coordenadas al DataFrame
