@@ -128,7 +128,7 @@ if selected == "Proyectos":
                     
                     # Distribute buttons across columns
                     for idx, file in enumerate(sorted(page_files)):
-                        page_name = file.replace(".py", "").replace("_", " ").title()
+                        page_name = file.replace(".py", "").replace("_", " ").capitalize()
                         col_idx = idx % 3
                         
                         # Place button in the appropriate column with improved styling
