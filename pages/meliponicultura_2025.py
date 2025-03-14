@@ -132,7 +132,7 @@ df2 = df2.explode('persona')
 
 # Create final personas table
 personas_df = df2[['_id', 'localidad', 'grupo', 'persona']].drop_duplicates().reset_index(drop=True)
-
+#st.write(personas_df)
 #st.table(personas_df)
 
 #######################
@@ -532,8 +532,9 @@ with st.container(border=True):
 productores = st.expander('Productores',expanded=False,icon=':material/group:')
 with productores:
     #st.write('s')
-
-    gb = GridOptionsBuilder.from_dataframe(personas_df)
+    gb_df = personas_df.copy()
+    gb_df.dropna(subset=['persona'],inplace=True)
+    gb = GridOptionsBuilder.from_dataframe(gb_df)
 
     gb.configure_side_bar(filters_panel=True)
 
@@ -564,7 +565,7 @@ with productores:
     grid_options = gb.build()
 
     grid_response = AgGrid(
-        personas_df,
+        gb_df,
         gridOptions=grid_options,
         fit_columns_on_grid_load=True,  # This is important
         allow_unsafe_jscode=True,
