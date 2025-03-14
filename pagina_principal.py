@@ -68,7 +68,7 @@ def login_section():
                 
 
                 with tab2:
-                    st.info("Este sistema permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador.")
+                    st.info("Este sistema permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador. Si la necesitas ponte en contacto con juan.fernandez@fhmm.org o david.contreras@fhmm.org")
         return True
     return False
 
