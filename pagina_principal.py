@@ -1,9 +1,8 @@
 import streamlit as st
 import os
 from supabase import create_client, Client
-from streamlit_extras.switch_page_button import switch_page
-import streamlit_card as st_card
 from streamlit_option_menu import option_menu
+from time import sleep
 
 st.set_page_config(
     page_title="Sistema de Proyectos Comunitarios",
@@ -14,7 +13,8 @@ st.set_page_config(
         'Get Help': 'https://www.example.com/help',
         'Report a bug': 'https://www.example.com/bug',
         'About': 'Sistema de gestión para Proyectos Comunitarios'
-    }
+    },
+    
 )
 
 # Custom theme colors
@@ -77,6 +77,8 @@ if login_section():
 
 # Main navigation section after login
 st.title("Sistema de Proyectos Comunitarios 🌱")
+
+
 
 
 # Display a status indicator for logged-in user
@@ -203,14 +205,11 @@ elif selected == "Contacto":
         - david.contreras@fhmm.org
         """)
         
-        # Admin section
         st.divider()
         st.subheader("Área de Admin")
         
-        # Password input
         admin_pass = st.text_input("Contraseña admin:", type="password")
         
-        # Initialize session state for admin auth
         if 'admin_authenticated' not in st.session_state:
             st.session_state.admin_authenticated = False
             
@@ -218,7 +217,6 @@ elif selected == "Contacto":
             if admin_pass == st.secrets.admin.password or st.session_state.admin_authenticated:
                 st.session_state.admin_authenticated = True
                 
-                # Fetch active queries
                 try:
                     response = supabase.table('contact_queries')\
                                         .select('*')\
@@ -232,7 +230,6 @@ elif selected == "Contacto":
                 if active_queries:
                     st.success(f"Consultas activas ({len(active_queries)})")
                     
-                    # Display active queries
                     for query in active_queries:
                         with st.expander(f"ID: {query['id']} - {query['name'][:20]}..."):
                             st.markdown(f"""
@@ -243,7 +240,6 @@ elif selected == "Contacto":
                             {query['message']}
                             """)
                     
-                    # Form to update status
                     with st.form("update_status"):
                         st.write("Marcar consulta como resuelta")
                         query_id = st.number_input("ID de consulta",value=0)
@@ -251,19 +247,49 @@ elif selected == "Contacto":
                         
                         if submit_update:
                             try:
-                                # Check if ID exists in active queries
                                 if not any(q['id'] == query_id for q in active_queries):
                                     st.error("ID no válido o ya resuelto")
                                 else:
-                                    # Update status in Supabase
                                     update_response = supabase.table('contact_queries')\
                                                         .update({'status': False})\
                                                         .eq('id', query_id)\
                                                         .execute()
                                     
                                     if len(update_response.data) > 0:
+                                        # ======= NUEVO CÓDIGO CON SENDGRID =======
+                                        try:
+                                            from sendgrid import SendGridAPIClient
+                                            from sendgrid.helpers.mail import Mail
+                                            from datetime import datetime
+                                            
+                                            resolved_query = update_response.data[0]
+                                            message_body = resolved_query['message']
+                                            first_lines = message_body.split('\n')[0].strip()[:50]
+                                            
+                                            message_content = f"""
+                                            Tu comentario con motivo {resolved_query['inquiry_type']}
+                                            y mensaje "{first_lines}" ha sido resuelto con fecha {datetime.now().strftime("%d/%m/%Y")}.
+                                            """
+                                            
+                                            message = Mail(
+                                                from_email=st.secrets.sendgrid.sender_email,
+                                                to_emails=resolved_query['email'],
+                                                subject='Consulta Resuelta - FHMM',
+                                                plain_text_content=message_content)
+                                            
+                                            sg = SendGridAPIClient(st.secrets.sendgrid.api_key)
+                                            response = sg.send(message)
+                                            
+                                            if response.status_code == 202:
+                                                st.success("Email de confirmación enviado exitosamente")
+                                            else:
+                                                st.error(f"Error enviando email: {response.status_code}")
+                                        except Exception as email_error:
+                                            st.error(f"Error enviando email: {str(email_error)}")
+                                        # ======= FIN NUEVO CÓDIGO =======
+                                        
                                         st.success(f"Consulta {query_id} marcada como resuelta")
-                                        # Force refresh by rerunning
+                                        sleep(3)
                                         st.rerun()
                                     else:
                                         st.error("Error al actualizar")
