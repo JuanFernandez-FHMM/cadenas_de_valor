@@ -134,6 +134,9 @@ if selected == "Proyectos":
                     # Distribute buttons across columns
                     for idx, file in enumerate(sorted(page_files)):
                         page_name = file.replace(".py", "").replace("_", " ").capitalize()
+                        # Special case for fichas_comunidades.py
+                        if file == "fichas_comunidades.py":
+                            page_name = "Mapa de comunidades"
                         col_idx = idx % 3
                         
                         # Place button in the appropriate column with improved styling
@@ -141,7 +144,7 @@ if selected == "Proyectos":
                             # Use a container to add padding and spacing around each button
                             with st.container():
                                 # Standard streamlit button with use_container_width
-                                if st.button(f"📁 {page_name}", 
+                                if st.button(f":material/folder: {page_name}", 
                                             key=f"btn_{idx}", 
                                             use_container_width=True):
                                     try:
