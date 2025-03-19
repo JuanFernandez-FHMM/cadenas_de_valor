@@ -244,17 +244,29 @@ def clean_data(tablename,secondtable):
     
     return df_final_with_personas[final_cols].copy()
 
-def plot_tipo1(dataset,columna,titulo, textposition='auto'):
-        plot = px.pie(dataset, names=columna, title=titulo)
-        plot.update_traces(
-            textposition=textposition,
-            textinfo='percent+label+value',
-            hole=0.3,
-            marker=dict(line=dict(color='#000000', width=2))
-            )
-        return plot
+def plot_tipo1(dataset, columna, titulo, textposition='auto', nulls=None):
+    # Create a copy to avoid modifying original data
+    df = dataset.copy()
+    
+    # Replace None/NaN label with custom nulls text if provided
+    if nulls is not None:
+        df[columna] = df[columna].fillna(nulls)
+    
+    plot = px.pie(df, names=columna, title=titulo)
+    plot.update_traces(
+        textposition=textposition,
+        textinfo='percent+label+value',
+        hole=0.3,
+        marker=dict(line=dict(color='#000000', width=2))
+    )
+    plot.update_traces(
+        hovertemplate="<b>%{label}</b><br>" +
+                      "Cantidad: %{value}<br>" +
+                      "Porcentaje: %{percent:.1%}<extra></extra>"
+    )
+    return plot
 
-def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto'):
+def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto', nulls=None):
     df_temp = dataframe[columna]
     df = []
 
@@ -266,17 +278,24 @@ def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto'):
         df.append(found_categories)
     df = pd.DataFrame({'categorias': [cat for cats in df for cat in (cats if cats else [None])]})
 
-    plot = px.pie(df, names="categorias", title=titulo)
+    # Replace None label with custom nulls text if provided
+    if nulls is not None:
+        df['categorias'] = df['categorias'].fillna(nulls)
+
+    plot = px.pie(df, names="categorias", title=titulo) 
     plot.update_traces(
         textposition=textposition,
         textinfo='percent+label+value',
         hole=0.3,
-        marker=dict(line=dict(color='#000000', width=2))
+        marker=dict(line=dict(color='#000000', width=2)),
+        hovertemplate="<b>%{label}</b><br>" +
+                      "Cantidad: %{value}<br>" +
+                      "Porcentaje: %{percent:.1%}<extra></extra>"
     )
 
     return plot
 
-def plot_tipo2_bar(dataframe, lista_categorias, columna, titulo, textposition='auto'):
+def plot_tipo2_bar(dataframe, lista_categorias, columna, titulo, textposition='auto', nulls=None):
     df_temp = dataframe[columna]
     total_responses = len(df_temp)  
 
@@ -286,15 +305,25 @@ def plot_tipo2_bar(dataframe, lista_categorias, columna, titulo, textposition='a
         for categoria in lista_categorias:
             if categoria.lower() in str(i).lower():
                 found_categories.append(categoria)
-        df.extend(found_categories)
+        df.extend(found_categories if found_categories else [None])
     
     df = pd.DataFrame({'categorias': df})
     category_counts = df['categorias'].value_counts().reset_index()
-    category_counts.columns = ['categorias', 'count']
-    category_counts['percentage'] = (category_counts['count'] / total_responses) * 100
+    category_counts.columns = ['categorias', 'Cantidad']
+    
+    # Replace None label with custom nulls text if provided
+    if nulls is not None:
+        category_counts.loc[category_counts['categorias'].isna(), 'categorias'] = nulls
+        
+    category_counts['Porcentaje'] = (category_counts['Cantidad'] / total_responses) * 100
 
-    plot = px.bar(category_counts, color='categorias',x='categorias', y='percentage', title=titulo, text=category_counts['count'].round(1))
-    plot.update_traces(textposition=textposition)
+    plot = px.bar(category_counts, color='categorias', x='categorias', y='Porcentaje', title=titulo, text=category_counts['Cantidad'].round(1))
+    plot.update_traces(
+        textposition=textposition,
+        hovertemplate="<b>%{x}</b><br>" +
+                      "Cantidad: %{text}<br>" + 
+                      "Porcentaje: %{y:.1f}%<extra></extra>"
+    )
     plot.update_layout(yaxis_title="Porcentaje (%)", xaxis_title="Desafíos", yaxis=dict(range=[0, 100]))
 
     return plot
@@ -462,7 +491,7 @@ if not selected_df.empty:
         maquinariaequipodf = selected_df.dropna(subset="maq_equipo")
         maquinariaequipo = plot_tipo1(maquinariaequipodf, "maq_equipo", "Estado de la maquinaria y del equipo por emprendimiento")
 
-        empleados = plot_tipo1(selected_df, "emp_colab", "Porcentaje de emprendimientos que cuenta con empleados")
+        empleados = plot_tipo1(selected_df, "emp_colab", "Porcentaje de emprendimientos que cuenta con empleados",nulls='Sin información')
 
         desafios_bar = plot_tipo2_bar(selected_df, [
                         "Costos de materia prima",
@@ -474,7 +503,7 @@ if not selected_df.empty:
                         ],
                         'desafios',
                         'Desafíos que detectaron los emprendimientos'
-                        )
+                        ,)
 
         
         comunicacion_pie = plot_tipo2(selected_df,[
@@ -484,7 +513,8 @@ if not selected_df.empty:
                         "De boca en boca"
                         ],
                         'comunicacion',
-                        'Métodos de promoción de los emprendimientos dentro de la comunidad' 
+                        'Métodos de promoción de los emprendimientos dentro de la comunidad',
+                        nulls='Sin promoción' 
                         )
         
         acompa_pie = plot_tipo2(selected_df,[
@@ -496,10 +526,11 @@ if not selected_df.empty:
                         "Asesoría",
                         ],
                         'tipo_acompa', 
-                        'Tipos de acompañamiento que necesitan los emprendimientos'   
+                        'Tipos de acompañamiento que necesitan los emprendimientos',
+                        nulls='Sin necesidad de acompañamiento'   
                         )
         
-        acceso_internet = plot_tipo1(selected_df,'acc_int','Porcentaje de acceso a internet en los emprendimientos')
+        acceso_internet = plot_tipo1(selected_df,'acc_int','Porcentaje de acceso a internet en los emprendimientos', nulls='Sin información')
 
         conex_pie = plot_tipo2(selected_df,[
                         "Casa propia",
@@ -511,7 +542,8 @@ if not selected_df.empty:
                         "Otro",
                         ],
                         'donde_conex',
-                        'Lugar donde se conectan a internet los representantes de los emprendimientos'    
+                        'Lugar donde se conectan a internet los representantes de los emprendimientos',
+                        nulls='Sin información'    
                         )
         
         calidad_conex_df = selected_df.dropna(subset="tipo_conexion")
@@ -524,10 +556,11 @@ if not selected_df.empty:
                         "Tablet",
                         ],
                         'equipo',
-                        'Equipo que usan para conectarse a internet'
+                        'Equipo que usan para conectarse a internet',
+                        nulls='Sin acceso a internet'
                         )
         
-        capacitacion = plot_tipo1(selected_df,'capacitacion','Emprendimientos que han recibido capacitación')
+        capacitacion = plot_tipo1(selected_df,'capacitacion','Emprendimientos que han recibido capacitación', nulls='Sin información')
 
         tipos_capacitacion_pie = plot_tipo2(selected_df,[
                         "Emprenimiento",
@@ -536,10 +569,11 @@ if not selected_df.empty:
                         "Otro",
                         ],
                         'tipo_capacitacion',
-                        'Tipos de capacitación recibida'
+                        'Tipos de capacitación recibida',
+                        nulls='Sin capacitación'
                         )
 
-        donde_capacitacion = plot_tipo1(selected_df,'donde_capacitacion','Dónde se ha recibido la capacitación')
+        donde_capacitacion = plot_tipo1(selected_df,'donde_capacitacion','Dónde se ha recibido la capacitación', nulls='Sin capacitación')
 
         quien_cap_pie = plot_tipo2(selected_df,[
                         "Sembrando vida",
@@ -558,10 +592,11 @@ if not selected_df.empty:
                         "Otro",
                         ],
                         'quien_cap',
-                        'Quiénes otorgaron las capacitaciones'
+                        'Quiénes otorgaron las capacitaciones',
+                        nulls='Sin capacitación'
                         )
 
-        necesita_cap = plot_tipo1(selected_df, 'necesita_cap', 'Porcentaje que considera necesitar capacitación para su emprendimiento')
+        necesita_cap = plot_tipo1(selected_df, 'necesita_cap', 'Porcentaje que considera necesitar capacitación para su emprendimiento', nulls='Sin información')
 
         forma_cap_df = selected_df.dropna(subset="forma_capacitacion")
         forma_cap = plot_tipo1(forma_cap_df,'forma_capacitacion','Modalidad preferida para las capacitaciones')
