@@ -28,7 +28,7 @@ def clean_data(tablename,secondtable):
     columns_to_replace = [
     'desafios', 'comunicacion', 'tipo_acompa', 'acc_int', 'persona', 'localidad',
     'donde_conex', 'tipo_conexion', 'equipo', 
-    'capacitacion', 'necesita_cap', 'forma_capacitacion',
+    'capacitacion', 'necesita_cap', 'forma_capacitacion','persona_grupo',
     'horario','repeat_inicio_tipo_emprendimiento', 'tipo_capacitacion', 'otro_tipo_capacitacion', 'donde_capacitacion', 'quien_cap',
     ]
 
@@ -212,6 +212,11 @@ def clean_data(tablename,secondtable):
     # Apply the transformation to each column
     for col in columns_to_replace:
         df_final_with_personas[col] = df_final_with_personas[col].apply(replace_values)
+        # Special handling for persona_grupo which contains lists
+        if col == 'persona_grupo':
+            df_final_with_personas[col] = df_final_with_personas[col].apply(
+                lambda x: [replace_values(item) for item in x] if isinstance(x, list) else x
+            )
     
     # Rename columns and select final columns (same as before)
     df_final_with_personas.rename(columns={

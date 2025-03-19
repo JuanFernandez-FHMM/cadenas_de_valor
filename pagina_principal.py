@@ -5,20 +5,20 @@ from streamlit_option_menu import option_menu
 from time import sleep
 
 st.set_page_config(
-    page_title="Sistema de Proyectos Comunitarios",
-    page_icon="🌱",
+    page_title="Plataforma de datos de proyectos comunitarios",
+    page_icon="data/favicon.ico",
     layout="wide",
     initial_sidebar_state="collapsed",
     menu_items={
         'Get Help': 'https://www.example.com/help',
         'Report a bug': 'https://www.example.com/bug',
-        'About': 'Sistema de gestión para Proyectos Comunitarios'
+        'About': 'Plataforma de datos de proyectos comunitarios'
     },
     
 )
 
 # Custom theme colors
-primary_color = "#4CAF50"  # Green shade for community/ecological theme
+primary_color = "#8C1818"  # Green shade for community/ecological theme
 
 # Apply custom styles
 st.markdown("""
@@ -27,9 +27,7 @@ st.markdown("""
         padding-top: 2rem;
         padding-bottom: 2rem;
     }
-    [data-testid="stHeader"] {
-        background-color: #f0f8f0;
-    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -43,13 +41,17 @@ def login_section():
         st.session_state.logged_in = False
 
     if not st.session_state.logged_in:
+        st.image("data/logo.png",width=380)
         cols = st.columns([1, 2, 1])
+        
         with cols[1]:
-            st.title("Sistema de Proyectos Comunitarios 🌱")
+            
+            st.title("Plataforma de datos de proyectos comunitarios  :gray[:material/diversity_3:] :bar_chart: :mag: ")
+            
             
             # Create a visually appealing login card
             with st.container():
-                st.subheader("Acceso al Sistema 🔒")
+                st.subheader("Acceso a la plataforma 🔒")
                 
                 # Create tabs for login methods (even if we only use password for now)
                 tab1, tab2 = st.tabs(["Acceso con Contraseña", "Información"])
@@ -57,7 +59,7 @@ def login_section():
                 with tab1:
                     with st.form("login_form"):
                         password = st.text_input("Contraseña de acceso:", type="password")
-                        submit = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
+                        submit = st.form_submit_button("Ingresar a la plataforma", use_container_width=True)
                         
                         if submit:
                             if password == st.secrets.login_credentials.psswrd:
@@ -68,7 +70,7 @@ def login_section():
                 
 
                 with tab2:
-                    st.info("Este sistema permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador. Si la necesitas ponte en contacto con juan.fernandez@fhmm.org o david.contreras@fhmm.org")
+                    st.info("Esta plataforma permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador. Si la necesitas ponte en contacto con juan.fernandez@fhmm.org o david.contreras@fhmm.org")
         return True
     return False
 
@@ -76,7 +78,8 @@ if login_section():
     st.stop()
 
 # Main navigation section after login
-st.title("Sistema de Proyectos Comunitarios 🌱")
+st.image("data/logo.png",width=280)
+st.title("Plataforma de datos de proyectos comunitarios  :gray[:material/diversity_3:] :bar_chart: :mag: ")
 
 
 
@@ -196,7 +199,7 @@ elif selected == "Contacto":
                         else:
                             st.error("Error al enviar la consulta. Por favor intente nuevamente.")
                     except Exception as e:
-                        st.error(f"Error en el sistema: {str(e)}")
+                        st.error(f"Error en la plataforma: {str(e)}")
     
     with contact_cols[1]:
         st.subheader("Información de Contacto")
