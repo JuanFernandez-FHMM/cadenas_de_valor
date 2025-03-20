@@ -194,7 +194,7 @@ if 'Folio de las bolsas' in grouped.columns:
     grouped["Folio de las bolsas"] = grouped["Folio de las bolsas"].apply(lambda x: " ".join(str(x).split(" ")) if isinstance(x, str) else x)
 
 # Streamlit UI
-st.set_page_config(page_title="Muestreo de calidad de maiz", page_icon=":corn:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Muestreo de calidad de maiz", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Muestreo de calidad de maiz :corn:")
 
@@ -700,7 +700,7 @@ with kpis_personales:
                             st.metric('Olor', value='OK', delta='100%')
                                 
                     except Exception as e:
-                        st.write(f'Error: {str(e)}')
+                        st.warning('Selecciona la o las variedades.')
 
                 except ValueError as e:
                     st.warning(f"Selecciona un valor en el filtro 'Fecha del registro' para visualizar la información.")
@@ -711,4 +711,4 @@ with kpis_personales:
         else:
             st.warning('Selecciona solo un productor a la vez para visualizar este tipo de información.')
     else:
-        st.warning('No hay datos disponibles para los filtros seleccionados.')
+        st.warning('Selecciona a un solo productor para obtener sus métricas personales.')

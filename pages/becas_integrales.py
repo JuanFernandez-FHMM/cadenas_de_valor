@@ -82,7 +82,7 @@ def clean_data(tablename, secondtable):
     
     return df
 
-st.set_page_config(page_title="Preregistro para las Becas Integrales FHMM-IU", page_icon=":school:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Preregistro para las Becas Integrales FHMM-IU", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Preregistro para las Becas Integrales FHMM-IU :school:")
 if st.button("Página principal"):

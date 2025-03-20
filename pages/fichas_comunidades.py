@@ -242,7 +242,7 @@ def clean_data(tablename,secondtable):
     return df_final_with_personas[final_cols].copy()
 
 
-st.set_page_config(page_title="Mapa de fichas de Emprendimientos Comunitarios Naat-Ha", page_icon=":earth_americas:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Mapa de fichas de Emprendimientos Comunitarios Naat-Ha", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 if st.button("Página principal"):
     st.switch_page("pagina_principal.py")

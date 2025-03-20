@@ -141,7 +141,7 @@ personas_df = df2[['_id', 'localidad', 'grupo', 'persona']].drop_duplicates().re
 
 
 
-st.set_page_config(page_title="Meliponicultura Comercialización 2025", page_icon=":honeybee:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Meliponicultura Comercialización 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Meliponicultura Comercialización 2025 :honeybee:")
 

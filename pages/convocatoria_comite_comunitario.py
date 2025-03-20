@@ -45,7 +45,7 @@ def clean_data(tablename,secondtable):
     return df
 
 
-st.set_page_config(page_title="Convocatoria Comité comunitario 2025", page_icon=":page_with_curl:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Convocatoria Comité comunitario 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Convocatoria Comité comunitario 2025 :page_with_curl:")
 

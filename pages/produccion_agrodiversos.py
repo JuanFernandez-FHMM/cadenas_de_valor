@@ -60,7 +60,7 @@ def clean_data(tablename):
     return df
 
 
-st.set_page_config(page_title="Seguimiento de la producción de agrodiversos 2025", page_icon=":corn:", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Seguimiento de la producción de agrodiversos 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
 st.title("Seguimiento de la producción de agrodiversos 2025 :corn:")
 if st.button("Página principal"):
