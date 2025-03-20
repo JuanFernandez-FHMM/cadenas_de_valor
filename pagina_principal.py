@@ -65,6 +65,8 @@ def login_section():
                             if password == st.secrets.login_credentials.psswrd:
                                 st.session_state.logged_in = True
                                 st.rerun()
+                            elif password == st.secrets.login_credentials.md:
+                                st.image('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg/1280px-Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg')
                             else:
                                 st.error("Contraseña incorrecta. Intente nuevamente.")
                 
@@ -100,23 +102,35 @@ selected = option_menu(
     default_index=0,
     orientation="horizontal",
     styles={
-        "container": {"padding": "0!important", "background-color": "#f0f8f0"},
+        "container": {"padding": "0!important",},
         "icon": {"color": primary_color, "font-size": "18px"},
         "nav-link": {"font-size": "16px", "text-align": "center", "margin": "0px", "--hover-color": "#eee"},
         "nav-link-selected": {"background-color": primary_color},
     }
 )
 
+hoverbutton_data = {
+    "becas_integrales.py":"Preregistro para las Becas Integrales FHMM-IU",
+    "convocatoria_comite_comunitario.py":"Convocatoria comité comunitario",
+    "emprendimientos_comunitarios.py":"Mapeo de Emprendimientos comunitarios - Naat Ha",
+    "fichas_comunidades.py":"Ficha para cosultar el mapa de comunidades registradas en Emprendimientos comunitarios",
+    "meliponicultura_2025.py":"Meliponicultura comercialización 2025",
+    "muestreo_de_calidad_de_maiz.py":"Muestreo de calidad de maíz",
+    "produccion_agrodiversos.py":"Seguimiento de la producción de agrodiversos 2025",
+    }
+
 if selected == "Proyectos":
 
     
-    st.info("Seleccione un proyecto para ver sus detalles.")
-    st.divider()
+
+    #st.divider()
 
     # Create a visually enhanced container for navigation
     with st.container():
-        st.subheader("Navegación de Proyectos")
         
+        st.subheader("Navegación de Proyectos")
+        st.info("Seleccione un proyecto para ver sus detalles.")
+
         pages_dir = "pages"
         if not os.path.exists(pages_dir):
             st.error("No se encontró el directorio 'pages'. Favor de notificar al administrador.")
@@ -145,7 +159,8 @@ if selected == "Proyectos":
                             with st.container():
                                 # Standard streamlit button with use_container_width
                                 if st.button(f":material/folder: {page_name}", 
-                                            key=f"btn_{idx}", 
+                                            key=f"btn_{idx}",
+                                            help=hoverbutton_data.get(file, ""),
                                             use_container_width=True):
                                     try:
                                         st.switch_page(f"pages/{file}")
@@ -158,13 +173,44 @@ if selected == "Proyectos":
 
 elif selected == "Documentación":
     st.header("Documentación y Ayuda 📚")
+
     
-    # Video tutorial section
-    with st.expander("Guía para el uso de la plataforma", expanded=False):
-        video_url = "https://www.youtube.com/watch?v=Ukre4MMCQfo"
-        st.video(video_url)
-    
+    with st.expander("Llenar formulario de contacto",icon=':material/mail:'):
+        with st.container(key='formulario-contacto',border=True):
+            st.write('''
+            ##### Solo llena el formulario con tu información y presiona el botón "Enviar consulta". 
+            
+            :blue[No olvides poner tu correo electónico correctamente, ahí te llegará una notificación cuando se haya resuelto tu consulta.]
+            ''')
+            st.image('data/report-bug.gif')
    
+    with st.expander('Seleccionar filas en las tablas',icon=':material/check_box:'):
+        with st.container(key='selecciones',border=True):
+            st.write('''
+            ##### Da click en la o las filas que quieres seleccionar.
+                     
+            ##### Puedes seleccionar todas las filas al dar click en la checkbox junto al nombre de la columna.
+            ''')
+            st.image('data/selection.gif')
+            st.write(':blue[Seleccionar columnas te permitirá descargar datos con el botón que aparecerá debajo de la tabla.]')
+
+    with st.expander('Reordenar columnas y filtrar valores',icon=':material/filter_list:'):
+        with st.container(key='filters',border=True):
+            st.write('''
+            ##### Puedes dar click a la columna para ordenar los valores alfabéticamente, con un click más invertes el orden y un tercero los regresa al orden original.
+            ##### Para filtar por palabras, da click en el símbolo :material/filter_list: y escribe los caracteres a filtrar.
+            ''')
+            st.image('data/filters.gif')
+            st.write(':blue[Una vez que filtres una columna, dar click al checbox de la columna solo seleccionará los valores visibles dentro del filtro, no todos los datos como lo haría originalmente.]')
+
+    with st.expander('Gráficas',icon=':material/bar_chart:'):
+        with st.container(key='graficas'):
+            st.write('''
+            ##### La mayoría de las gráficas necesitan datos seleccionados para generarse y funcionan mejor con todos los datos seleccionados. Da click a la checkbox de la columna para seleccionar todos los dato y espera un momento a que carguen las gráficas.
+            
+            ''')
+            st.image('data/graphs.gif')
+            st.write(':blue[En caso de que las gráficas funcionen mejor con cierto tipo de información o un número limitado de filas, eso será indicado en el apartado de dicha gráfica, de otra forma siempre es recomendable seleccionar todos los datos.]')
 
 elif selected == "Contacto":
     st.header("Contacto y Soporte 📧")
