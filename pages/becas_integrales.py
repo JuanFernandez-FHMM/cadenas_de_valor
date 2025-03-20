@@ -83,6 +83,20 @@ def clean_data(tablename, secondtable):
     return df
 
 st.set_page_config(page_title="Preregistro para las Becas Integrales FHMM-IU", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 
 st.title("Preregistro para las Becas Integrales FHMM-IU :school:")
 if st.button("Página principal"):

@@ -17,6 +17,23 @@ st.set_page_config(
     
 )
 
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+st.logo('data/logo.png',size='large', icon_image='data/loguito.png')
+
+
 # Custom theme colors
 primary_color = "#8C1818"  # Green shade for community/ecological theme
 
@@ -85,7 +102,7 @@ st.title("Plataforma de datos de proyectos comunitarios  :gray[:material/diversi
 
 
 
-
+st.sidebar.title('Plataforma de datos de proyectos comunitarios')
 # Display a status indicator for logged-in user
 with st.sidebar:
     st.success("✅ Usuario autenticado")
@@ -175,14 +192,13 @@ elif selected == "Documentación":
     st.header("Documentación y Ayuda 📚")
 
     
-    with st.expander("Llenar formulario de contacto",icon=':material/mail:'):
-        with st.container(key='formulario-contacto',border=True):
+    with st.expander('Acceder a un proyecto', icon=':material/login:'):
+        with st.container(key='acceder',border=True):
             st.write('''
-            ##### Solo llena el formulario con tu información y presiona el botón "Enviar consulta". 
-            
-            :blue[No olvides poner tu correo electónico correctamente, ahí te llegará una notificación cuando se haya resuelto tu consulta.]
+            ##### Para acceder a un panel, explora la lista de paneles disponibles y da click en el de tu elección. Puedes poner el cursor sobre un botón para tener un poco más de información.
             ''')
-            st.image('data/report-bug.gif')
+            st.image('data/enter.gif')
+            st.write(':blue[Ten en cuenta que no puedes entrar a un panel directamente con el link ya que te redireccionará a iniciar sesión. Debes acceder a la página principal y luego dar click en el botón del panel al que quieres acceder.]')
    
     with st.expander('Seleccionar filas en las tablas',icon=':material/check_box:'):
         with st.container(key='selecciones',border=True):
@@ -211,6 +227,17 @@ elif selected == "Documentación":
             ''')
             st.image('data/graphs.gif')
             st.write(':blue[En caso de que las gráficas funcionen mejor con cierto tipo de información o un número limitado de filas, eso será indicado en el apartado de dicha gráfica, de otra forma siempre es recomendable seleccionar todos los datos.]')
+
+    with st.expander("Llenar formulario de contacto",icon=':material/mail:'):
+        with st.container(key='formulario-contacto',border=True):
+            st.write('''
+            ##### Solo llena el formulario con tu información y presiona el botón "Enviar consulta". 
+            
+            :blue[No olvides poner tu correo electónico correctamente, ahí te llegará una notificación cuando se haya resuelto tu consulta.]
+            ''')
+            st.image('data/report-bug.gif')
+
+
 
 elif selected == "Contacto":
     st.header("Contacto y Soporte 📧")

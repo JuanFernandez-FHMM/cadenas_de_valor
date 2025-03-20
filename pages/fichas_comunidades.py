@@ -243,6 +243,21 @@ def clean_data(tablename,secondtable):
 
 
 st.set_page_config(page_title="Mapa de fichas de Emprendimientos Comunitarios Naat-Ha", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+
 
 if st.button("Página principal"):
     st.switch_page("pagina_principal.py")

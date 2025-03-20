@@ -195,6 +195,21 @@ if 'Folio de las bolsas' in grouped.columns:
 
 # Streamlit UI
 st.set_page_config(page_title="Muestreo de calidad de maiz", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+
 
 st.title("Muestreo de calidad de maiz :corn:")
 

@@ -46,6 +46,19 @@ def clean_data(tablename,secondtable):
 
 
 st.set_page_config(page_title="Convocatoria Comité comunitario 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 st.title("Convocatoria Comité comunitario 2025 :page_with_curl:")
 

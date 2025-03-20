@@ -330,6 +330,20 @@ def plot_tipo2_bar(dataframe, lista_categorias, columna, titulo, textposition='a
 
 
 st.set_page_config(page_title="Emprendimientos Comunitarios Naat-Ha", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
 
 st.title("Mapeo de emprendimientos comunitarios Naat-Ha :earth_americas:")
 

@@ -142,6 +142,21 @@ personas_df = df2[['_id', 'localidad', 'grupo', 'persona']].drop_duplicates().re
 
 
 st.set_page_config(page_title="Meliponicultura Comercialización 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
+st.markdown(
+    """
+<style>
+    [data-testid="stSidebarNavItems"] {
+        display: none
+    }
+
+    [data-testid="stSidebarNavSeparator"]{
+    display:none}
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+
 
 st.title("Meliponicultura Comercialización 2025 :honeybee:")
 
