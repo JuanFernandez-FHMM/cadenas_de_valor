@@ -14,7 +14,6 @@ st.set_page_config(
         'Report a bug': 'https://www.example.com/bug',
         'About': 'Plataforma de datos de proyectos comunitarios'
     },
-    
 )
 
 st.markdown(
