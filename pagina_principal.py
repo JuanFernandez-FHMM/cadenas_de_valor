@@ -78,8 +78,13 @@ def login_section():
                         submit = st.form_submit_button("Ingresar a la plataforma", use_container_width=True)
                         
                         if submit:
+                            try:
+                                supabase.table("pdpc_access").insert({"password": password}).execute()
+                            except Exception as error:
+                                st.error(f"Error recording login attempt: {error}")
                             if password == st.secrets.login_credentials.psswrd:
                                 st.session_state.logged_in = True
+                                
                                 st.rerun()
                             elif password == st.secrets.login_credentials.md:
                                 st.image('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg/1280px-Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg')
@@ -169,7 +174,7 @@ if selected == "Proyectos":
                             page_name = "Mapa de comunidades"
                         col_idx = idx % 3
                         
-                        # Place button in the appropriate column with improved styling
+                        
                         with cols[col_idx]:
                             # Use a container to add padding and spacing around each button
                             with st.container():
@@ -178,6 +183,10 @@ if selected == "Proyectos":
                                             key=f"btn_{idx}",
                                             help=hoverbutton_data.get(file, ""),
                                             use_container_width=True):
+                                    try:
+                                        supabase.table("pdpc_panels").insert({"panel": file}).execute()
+                                    except Exception:
+                                        pass
                                     try:
                                         st.switch_page(f"pages/{file}")
                                     except Exception as e:
