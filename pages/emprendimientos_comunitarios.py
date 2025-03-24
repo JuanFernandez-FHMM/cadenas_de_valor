@@ -40,7 +40,7 @@ def clean_data(tablename,secondtable):
             '_id', 'localidad', 'persona', 'solo_o_grupo', 'grupo', 'num_personas',
             'inf', 'asp_social_comun', 'tec_com', 'fort', '_submission_time',
             'ubi', '_geolocation', 'observaciones', 'repeat_personas',
-            'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona'
+            'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',
         ],
         sep='/',
         errors='ignore'
@@ -48,13 +48,13 @@ def clean_data(tablename,secondtable):
     
     # Ensure all expected columns are present, even if missing in the data
     expected_columns = [
-        'repeat_inicio/nombre_emprendimiento', 'repeat_inicio/tipo_emprendimiento',
+        'repeat_inicio/nombre_emprendimiento', 'repeat_inicio/tipo_emprendimiento', 'repeat_inicio/otro_tipo_emprend'
         'repeat_inicio/artesania', 'repeat_inicio/productos', 'repeat_inicio/image_prod',
         'repeat_inicio/costeo', 'repeat_inicio/factura', 'repeat_inicio/client_potenciales',
         '_id', 'localidad', 'persona', 'solo_o_grupo', 'grupo', 'num_personas',
         'inf', 'asp_social_comun', 'tec_com', 'fort', '_submission_time',
         'ubi', '_geolocation', 'observaciones', 'repeat_personas',
-        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona'
+        'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',
     ]
     
     # Add missing columns with default NaN values
@@ -223,12 +223,13 @@ def clean_data(tablename,secondtable):
         '_submission_time': 'fecha_submision',
         'repeat_inicio_nombre_emprendimiento': 'emprendimiento',
         'repeat_inicio_tipo_emprendimiento': 'tipo_emprendimiento',
+        'repeat_inicio_otro_tipo_emprend':'otro_tipo_emprend',
         'repeat_inicio_productos': 'productos_servicios',
         'repeat_inicio_image_prod': 'imagen_producto'
     }, inplace=True)
     
     final_cols = [
-        'emprendimiento', 'tipo_emprendimiento', 'productos_servicios', 'imagen_producto',
+        'emprendimiento', 'tipo_emprendimiento', 'productos_servicios', 'imagen_producto', 'otro_tipo_emprend',
         'localidad', 'persona', 'nombre_persona', 'apellidos_persona', 'sexo_persona', 'edad_persona',
         'solo_o_grupo', 'grupo', 'num_personas', 'persona_grupo', 'nombre', 'apellidos', 'sexo', 'edad',
         'esp_trabajo', 'herramienta', 'maq_equipo', 'acc_bas', 'acc_lu', 'emp_colab',
@@ -259,11 +260,23 @@ def plot_tipo1(dataset, columna, titulo, textposition='auto', nulls=None):
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
-    plot.update_traces(
-        hovertemplate="<b>%{label}</b><br>" +
-                      "Cantidad: %{value}<br>" +
-                      "Porcentaje: %{percent:.1%}<extra></extra>"
-    )
+    if titulo == 'Tipos de emprendimiento':
+        customdata = dataset['otro_tipo_emprend'].apply(
+            lambda x: f"Otro: {x}<br>" if pd.notnull(x) and x != '' else ""
+        )
+        plot.update_traces(
+            customdata=customdata,
+            hovertemplate="<b>%{label}</b><br>" +
+                  "%{customdata}" +
+                  "Cantidad: %{value}<br>" +
+                  "Porcentaje: %{percent:.1%}<extra></extra>"
+        )
+    else:
+        plot.update_traces(
+            hovertemplate="<b>%{label}</b><br>" +
+                          "Cantidad: %{value}<br>" +
+                          "Porcentaje: %{percent:.1%}<extra></extra>"
+        )
     return plot
 
 def plot_tipo2(dataframe,lista_categorias, columna,titulo, textposition='auto', nulls=None):
@@ -368,6 +381,7 @@ gb.configure_default_column(
 columns = {
     'emprendimiento': "Nombre del emprendimiento",
     'tipo_emprendimiento': "Tipo de emprendimiento",
+    'otro_tipo_emprend':"¿Qué otro tipo de emprendimiento?",
     'productos_servicios': "Productos o servicios ofrecidos",
     'imagen_producto': "Imagen del producto",
     'localidad': "Localidad",

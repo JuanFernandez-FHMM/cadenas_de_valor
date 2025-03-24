@@ -241,52 +241,25 @@ if not selected_df.empty:
     # --- Plot selection logic (added) ---
     product_list = selected_df['producto'].unique().tolist()
     selected_product = st.selectbox("Seleccione un producto para análisis:", product_list, key="product_select")
+    hide_outliers = st.checkbox("Ocultar valores atipicos", value=False, key="hide_outliers", help='Esto no borra los datos de la base de datos, solo los oculta.')
+    if hide_outliers:
+        def remove_outliers(df):
+            df_filtered = df.copy()
+            for col in ['cantidad_cosecha', 'cantidad_comercializar']:
+                Q1 = df_filtered[col].quantile(0.25)
+                Q3 = df_filtered[col].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 3 * IQR
+                upper_bound = Q3 + 3 * IQR
+                df_filtered = df_filtered[(df_filtered[col] >= lower_bound) & (df_filtered[col] <= upper_bound)]
+            return df_filtered
+        df_plots = remove_outliers(selected_df)
+    else:
+        df_plots = selected_df.copy()
 
     if selected_product:  # Only create plots if a product is selected
-        create_plots(selected_df, selected_product)
+        create_plots(df_plots, selected_product)
+    selected_df = df_plots  # Use filtered data for subsequent plots (e.g., the original bar chart)
+    #if selected_product:  # Only create plots if a product is selected
+    #    create_plots(selected_df, selected_product)
 
-
-    # --- Your original bar chart (still included) ---
-    st.subheader("Grafico de Barras (Original)")
-    grouped_df = selected_df.groupby(['producto', 'comunidad']).agg({
-        'cantidad_cosecha': 'sum',
-        'cantidad_comercializar': 'sum'
-    }).reset_index()
-
-    # Melt the dataframe for easier plotting
-    melted_df = grouped_df.melt(
-        id_vars=['producto', 'comunidad'],
-        value_vars=['cantidad_cosecha', 'cantidad_comercializar'],
-        var_name='Metrica',
-        value_name='Cantidad'
-    )
-
-    # Create interactive Plotly visualization
-    fig = px.bar(
-        melted_df,
-        x='producto',
-        y='Cantidad',
-        color='Metrica',
-        barmode='group',
-        # facet_col='comunidad',
-        facet_row='comunidad',
-        labels={'Cantidad': 'Total', 'Producto': 'Producto'},
-        height=800,
-        color_discrete_sequence=px.colors.qualitative.Pastel
-    )
-
-    # Update layout for better readability
-    fig.update_layout(
-        legend_title_text='Métricas',
-        hovermode='x unified',
-        showlegend=True,
-        margin=dict(l=50, r=50, t=80, b=50)
-    )
-
-    # Update facet labels
-    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-
-    # Use Streamlit columns for layout
-    col1, col2 = st.columns([0.8, 0.2])
-    with col1:
-        st.plotly_chart(fig, use_container_width=True)
