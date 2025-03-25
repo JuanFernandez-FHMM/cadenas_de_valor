@@ -19,6 +19,7 @@ def plot_tipo1(dataset, columna, titulo, textposition='auto'):
         hole=0.3,
         marker=dict(line=dict(color='#000000', width=2))
     )
+    plot.update_traces(hovertemplate='Especie: %{label}<br>Percent: %{percent}<br>Value: %{value}')
     return plot
 def replace_values(value):
     if isinstance(value, str):  # Ensure it's a string
@@ -131,7 +132,7 @@ for col in columns_to_replace:
 df2 = df2.explode('persona')
 
 # Create final personas table
-personas_df = df2[['_id', 'localidad', 'grupo', 'persona']].drop_duplicates().reset_index(drop=True)
+personas_df = df2[['_id', 'localidad', 'grupo','otro_grupo', 'persona']].drop_duplicates().reset_index(drop=True)
 #st.write(personas_df)
 #st.table(personas_df)
 
@@ -202,7 +203,7 @@ with st.container(border=True):
 
     useful = df.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
 
-    cols_to_keep = ['_id','localidad', 'grupo', 'persona', 'factura','ciclo', ]
+    cols_to_keep = ['_id','localidad', 'grupo', 'otro_grupo', 'persona', 'factura','ciclo', ]
 
     useful_first_filter = useful.loc[:, cols_to_keep]
 
@@ -212,6 +213,7 @@ with st.container(border=True):
         '_id': 'ID',
         'localidad': 'Localidad',
         'grupo': 'Grupo',
+        'otro_grupo': 'Otro grupo',
         'persona': 'Persona',
         'factura': 'Factura',
         'ciclo': 'Ciclo de comercialización con TRM',
@@ -286,7 +288,7 @@ with st.container(border=True):
         selected2_2 = useful2_2[useful2_2['_id'].isin(selected_df['ID'])]
 
 
-        cols_2_keep_second = ['_id','grupo', 'localidad', 'repeat_practicas.repeat_practicas/current_practica','repeat_practicas.repeat_practicas/capacitador','repeat_practicas.repeat_practicas/capacitador_otro']
+        cols_2_keep_second = ['_id','grupo', 'otro_grupo', 'localidad', 'repeat_practicas.repeat_practicas/current_practica','repeat_practicas.repeat_practicas/capacitador','repeat_practicas.repeat_practicas/capacitador_otro']
 
         useful2 = selected2_2.loc[:, cols_2_keep_second]
 
@@ -757,7 +759,7 @@ with plots:
 
             bees = df_plots.dropna(subset=['repeat_abejas.repeat_abejas/current_abeja'])
 
-            bees.drop_duplicates(subset=['_id', 'grupo'], inplace=True)
+            #bees.drop_duplicates(subset=['_id', 'grupo'], inplace=True)
 
             plot2 = plot_tipo1(bees,'repeat_abejas.repeat_abejas/current_abeja', 'Distribución de las abejas por tipo')
 
@@ -822,7 +824,7 @@ with plots:
                 hover_data='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025',
                 x='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/current_prod',
                 y='repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025', 
-                title='Cantidad de polen y colmenas a cosechar en 2025', 
+                title='Cantidad de polen y propóleos a cosechar en 2025', 
                 color='_id',  # Use _id for color
                 labels={
                     'repeat_abejas.repeat_abejas/com_x_productos.repeat_abejas/com_x_productos/cant_prod_2025': 'Cantidad a cosechar en 2025',
