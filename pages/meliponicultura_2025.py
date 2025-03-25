@@ -700,18 +700,32 @@ with productores:
         grupos_por_localidad = personas_df.groupby(['localidad', 'grupo_id']).size().reset_index(name='conteo')
         grupos_info = {}
 
-        for localidad in grupos_por_localidad['localidad'].unique():
+        grupos_por_localidad['localidad_normalized'] = grupos_por_localidad['localidad'].str.strip().str.lower()
+        conteo_por_localidad['localidad_normalized'] = conteo_por_localidad['localidad'].str.strip().str.lower()
+
+        # Generate grupos_info with normalized keys
+        grupos_info = {}
+        for localidad in grupos_por_localidad['localidad_normalized'].unique():
+            grupos_localidad = grupos_por_localidad[grupos_por_localidad['localidad_normalized'] == localidad]
             grupos_info[localidad] = "<br>".join([
                 f"{row['grupo_id']}: {row['conteo']} productores" 
-                for _, row in grupos_por_localidad[grupos_por_localidad['localidad'] == localidad].iterrows()
+                for _, row in grupos_localidad.iterrows()
             ])
 
         fig.update_traces(
-            hovertemplate="<b>%{hovertext}</b><br><br>" +
-                        "Localidad: %{customdata[0]}<br>" +
-                        "Total productores: %{marker.size}<br><br>" +
-                        "<b>Grupos:</b><br>%{customdata[1]}<extra></extra>",
-            customdata=[[loc, grupos_info.get(loc, "No hay grupos")] for loc in conteo_por_localidad['localidad']]
+            hovertemplate=(
+                "<b>%{hovertext}</b><br><br>"
+                "Localidad: %{customdata[0]}<br>"
+                "Total productores: %{marker.size}<br><br>"
+                
+            ),
+            customdata=[
+                [
+                    row['localidad'],  # Original localidad name for display
+                    grupos_info.get(row['localidad_normalized'], "No hay grupos")
+                ] 
+                for _, row in conteo_por_localidad.iterrows()
+            ]
         )
 
         fig.update_layout(
