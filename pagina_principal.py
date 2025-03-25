@@ -3,6 +3,7 @@ import os
 from supabase import create_client, Client
 from streamlit_option_menu import option_menu
 from time import sleep
+import requests
 
 st.set_page_config(
     page_title="Plataforma de datos de proyectos comunitarios",
@@ -15,6 +16,13 @@ st.set_page_config(
         'About': 'Plataforma de datos de proyectos comunitarios'
     },
 )
+def get_ip():
+    try:
+        ip = requests.get("https://api64.ipify.org?format=json").json()["ip"]
+    except:
+        ip = "Unknown"
+    return ip
+
 
 st.markdown(
     """
@@ -79,18 +87,23 @@ def login_section():
                         
                         if submit:
                             try:
-                                supabase.table("pdpc_access").insert({"password": password}).execute()
+                                user_ip = get_ip()
+                                
                             except Exception as error:
                                 st.error(f"Error recording login attempt: {error}")
                             if password == st.secrets.login_credentials.psswrd:
                                 st.session_state.logged_in = True
-                                
+                                supabase.table("pdpc_access").insert({"password": password, "status":"True", "ip":user_ip}).execute()
+                                st.rerun()
+
+                            elif password == st.secrets.login_credentials.debug:
+                                st.session_state.logged_in = True
                                 st.rerun()
                             elif password == st.secrets.login_credentials.md:
                                 st.image('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg/1280px-Moo_deng_%E0%B8%AB%E0%B8%A1%E0%B8%B9%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%87_%282024-09-11%29_-_img_02.jpg')
                             else:
                                 st.error("Contraseña incorrecta. Intente nuevamente.")
-                
+                                supabase.table("pdpc_access").insert({"password": password, "status":"False", "ip":user_ip}).execute()
 
                 with tab2:
                     st.info("Esta plataforma permite gestionar y visualizar proyectos comunitarios. Para acceder necesita la contraseña proporcionada por el administrador. Si la necesitas ponte en contacto con juan.fernandez@fhmm.org o david.contreras@fhmm.org")
