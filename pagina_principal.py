@@ -1,21 +1,18 @@
-import streamlit as st
-import os
-from supabase import create_client, Client
 from streamlit_option_menu import option_menu
+from supabase import create_client, Client
 from time import sleep
+import streamlit as st
 import requests
+import os
 
 st.set_page_config(
     page_title="Plataforma de datos de proyectos comunitarios",
     page_icon="data/favicon.ico",
     layout="wide",
     initial_sidebar_state="collapsed",
-    menu_items={
-        'Get Help': 'https://www.example.com/help',
-        'Report a bug': 'https://www.example.com/bug',
-        'About': 'Plataforma de datos de proyectos comunitarios'
-    },
 )
+
+# Obetner la ip de cada usuario que entra. esto para tenerlo como metadatos y ver cuantos "usuarios diferentes" ingresan a la plataforma. Tener una idea de aquellos que entran y aquellos que no
 def get_ip():
     try:
         ip = requests.get("https://api64.ipify.org?format=json").json()["ip"]
