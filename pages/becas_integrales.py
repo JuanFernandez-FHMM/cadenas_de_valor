@@ -6,7 +6,9 @@ import plotly.express as px
 from geopy.geocoders import Nominatim
 import time
 import folium
-from streamlit_folium import folium_static
+from streamlit_folium import st_folium
+import supabase
+
 
 utils.logged_in(st.session_state)
 
@@ -80,6 +82,31 @@ def clean_data(tablename, secondtable):
         '_submission_time': 'fecha_submision'
     }, inplace=True)
     
+    # connect to supabase
+    supabase_client = supabase.create_client(
+        supabase_url=st.secrets["supabase"]["url"],
+        supabase_key=st.secrets["supabase"]["key"]
+    )
+
+    # For each row where apellidos is null
+    for idx, row in df[df['apellidos'].isnull()].iterrows():
+        try:
+            print(row['nombres'])
+            # Query Supabase for matching name
+            response = supabase_client.table('PADRON_FHMM_habitante_') \
+                .select('sexo', 'edad') \
+                .eq('nombre_completo', row['nombres']) \
+                .execute()
+            
+            print(response)
+            # If we got a match, update the dataframe
+            if response.data and len(response.data) > 0:
+                df.at[idx, 'edad'] = response.data[0]['edad']
+                df.at[idx, 'sexo'] = response.data[0]['sexo']
+        except:
+            continue
+    df['sexo'] = df['sexo'].str.title()
+
     return df
 
 st.set_page_config(page_title="Preregistro para las Becas Integrales FHMM-IU", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
@@ -183,7 +210,11 @@ if not selected_df.empty:
         estudios = px.pie(selected_df, names='estudios', title='Distribución por nivel de estudios')
         st.plotly_chart(estudios)
 
-        universidad = px.pie(selected_df, names='universidad', title='Distribución por universidad')
+        # Replace null values with 'No aplica' for universidad plot
+        universidad_df = selected_df.copy()
+        universidad_df['universidad'] = universidad_df['universidad'].fillna('No aplica')
+        universidad = px.pie(universidad_df, names='universidad', title='Distribución por universidad')
+
         st.plotly_chart(universidad)
 
     with col2:
@@ -282,7 +313,7 @@ try:
             ).add_to(m)
 
         # Display map in Streamlit
-        folium_static(m)
+        st_folium(m)
         
     else:
         st.warning("No se encontraron coordenadas válidas para mostrar el mapa.")
