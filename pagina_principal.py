@@ -194,7 +194,8 @@ if selected == "Proyectos":
                                             help=hoverbutton_data.get(file, ""),
                                             use_container_width=True):
                                     try:
-                                        supabase.table("pdpc_panels").insert({"panel": file}).execute()
+                                        user_ip = get_ip()
+                                        supabase.table("pdpc_panels").insert({"panel": file,"ip":user_ip}).execute()
                                     except Exception:
                                         pass
                                     try:
