@@ -328,24 +328,44 @@ list_columns = [
     'Comentarios'
 ]
 
+
+
 # Process 'Variedad' column
 grouped['Variedad'] = grouped['Variedad'].apply(split_variedad)
 
-# Process list columns by splitting comma-separated values
+# Process list columns by splitting comma-separated values and handle NaNs
 for col in list_columns:
+    # Fill NaN with appropriate defaults before splitting
+    if col == 'Comentarios':
+        # Replace NaN with 'Sin comentarios' to ensure one entry
+        grouped[col] = grouped[col].fillna('Sin comentarios')
+    else:
+        # For other columns, fill NaN with empty string to split into empty list
+        grouped[col] = grouped[col].fillna('')
+    # Split into list of items
     grouped[col] = grouped[col].apply(
-        lambda x: [item.strip() for item in str(x).split(',')] if pd.notna(x) else []
+        lambda x: [item.strip() for item in str(x).split(',')] if x else []
     )
 
-# Verify that all list columns have the same length as 'Variedad' (optional)
-# This step checks for mismatches in list lengths
-grouped['Variedad_length'] = grouped['Variedad'].apply(len)
+# Adjust each list column to match 'Variedad' length
+def adjust_list_length(row, col):
+    var_len = len(row['Variedad'])
+    current_list = row[col]
+    current_len = len(current_list)
+    
+    if current_len < var_len:
+        # Pad with default values
+        fill_value = 'Sin comentarios' if col == 'Comentarios' else ''
+        return current_list + [fill_value] * (var_len - current_len)
+    elif current_len > var_len:
+        # Truncate to match 'Variedad' length
+        return current_list[:var_len]
+    else:
+        return current_list
+
 for col in list_columns:
-    grouped[f'{col}_length'] = grouped[col].apply(len)
-    mismatch = grouped[grouped['Variedad_length'] != grouped[f'{col}_length']]
-    if not mismatch.empty:
-        print(f"Mismatch found in column {col}. Please check the following rows:")
-        print(mismatch.index.tolist())
+    grouped[col] = grouped.apply(lambda row: adjust_list_length(row, col), axis=1)
+
 
 # Explode all relevant columns to create individual rows
 explode_cols = ['Variedad'] + list_columns
