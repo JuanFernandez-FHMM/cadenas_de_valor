@@ -11,3 +11,4 @@ streamlit_extras
 streamlit_card
 streamlit_option_menu
 sendgrid
+flask
