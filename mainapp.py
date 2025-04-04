@@ -67,6 +67,7 @@ allowed_tables = {
     "convocatoria-comite-comunitario-2025": "convocatoria_comite_comunitario_2025",
     "lista-asistencia-naatha":"lista_asistencia_naatha",
     "registro-de-actualizaciones-de-produccion-de-maiz": "registro_actualizaciones_produccion_maiz",
+    "diagnostico-para-emprendimientos-productivos": "diagnostico_para_emprendimientos_productivos",
 }
 
 
