@@ -16,7 +16,8 @@ supabase: Client = create_client(url, key)
 
 # get data from supabase
 milpa_sustentable = supabase.table("milpa_sustentable").select("*").execute()
-
+transacciones = supabase.table("transacciones_milpa_traspatiomaya").select("*").execute()
+transacciones_data = supabase.table("transacciones_milpa_traspatiomaya_data").select("*").execute()
 actualizaciones_prod_maiz = supabase.table("registro_actualizaciones_produccion_maiz").select("data").execute()
 actualizaciones_prod_maiz_data = supabase.table("registro_actualizaciones_produccion_maiz_data").select("*").execute()
 
@@ -64,6 +65,7 @@ productor_map = actualizaciones_prod_maiz_data_df.set_index("name")["label"].to_
 
 # Ensure productor column in new_data is a string for consistency
 new_data['productor'] = new_data['productor'].astype(str)
+
 
 
 
@@ -142,6 +144,8 @@ new_data["cosecha total"] = new_data.apply(
 new_data["venta total"] = new_data.apply(
     lambda row: row["nueva venta"] if pd.notnull(row["nueva venta"]) else row["venta"], axis=1
 )
+new_data["venta total sin compras"] = new_data["venta total"].copy()
+
 
 # reorder columns based on list
 column_order = [
@@ -150,6 +154,7 @@ column_order = [
     "color",
     "cosecha total",
     "venta total",
+    "venta total sin compras",
     "cosecha",
     "nueva cosecha",
     "diferencia cosecha",
@@ -164,8 +169,72 @@ column_order = [
 ]
 
 new_data = new_data[column_order]
+#copy "venta total" to "venta total sin compras" in new_data
+
+# transform transacciones["productor"] using transacciones_data["name"] and transacciones_data["label"]
+# Create DataFrame from transacciones and transform productor column
+transacciones_df = pd.DataFrame(transacciones.data)
+transacciones_data_df = pd.DataFrame(transacciones_data.data)
+productor_mapping = transacciones_data_df.set_index('name')['label'].to_dict()
+transacciones_df['productor'] = transacciones_df['productor'].map(productor_mapping)
+
+#match transacciones_df "productor" and "variedad" with new_data "productor" and "variedad" and substract transacciones_df["cantidad"] from new_data["venta total"]
+for _, row in transacciones_df.iterrows():
+    productor = row['productor']
+    variedad = row['variedad']
+    cantidad = row['cantidad']
+
+    # Find matching rows in new_data
+    match = (new_data['productor'] == productor) & (new_data['variedad'] == variedad)
+
+    if match.any():
+        # Subtract cantidad from venta total
+        new_data.loc[match, 'venta total'] -= cantidad
+    else:
+        # If no match found, you might want to handle this case (e.g., log it, raise an error, etc.)
+        print(f"No match found for productor: {productor}, variedad: {variedad}")
+
+# add column on new_data "cantidad comprada" including sum of "cantidad" from "productor" and "variedad" on transacciones_df
+new_data["cantidad comprada"] = 0
+for _, row in transacciones_df.iterrows():
+    productor = row['productor']
+    variedad = row['variedad']
+    cantidad = row['cantidad']
+
+    # Find matching rows in new_data
+    match = (new_data['productor'] == productor) & (new_data['variedad'] == variedad)
+
+    if match.any():
+        # Add cantidad to cantidad comprada
+        new_data.loc[match, 'cantidad comprada'] += cantidad
+    else:
+        # If no match found, you might want to handle this case (e.g., log it, raise an error, etc.)
+        print(f"No match found for productor: {productor}, variedad: {variedad}")
 
 
+# reorder columns based on list
+column_order = [
+    "productor",
+    "variedad",
+    "color",
+    "cosecha total",
+    "venta total",
+    "cantidad comprada",
+    "venta total sin compras",
+    "cosecha",
+    "nueva cosecha",
+    "diferencia cosecha",
+    "venta",
+    "nueva venta",
+    "diferencia venta",
+    "estado",
+    "municipio",
+    "comunidad",
+    "padron"
+
+]
+
+new_data = new_data[column_order]
 
 st.set_page_config(page_title="Disponibilidad de maíz 2025", page_icon="data/favicon.ico", layout="wide", initial_sidebar_state="collapsed")
 
@@ -187,6 +256,7 @@ st.title("Disponibilidad de maíz 2025 :material/spa:")
 if st.button("Página principal"):
     st.switch_page("pagina_principal.py")
 
+
 gb = GridOptionsBuilder.from_dataframe(new_data)
 
 gb.configure_default_column(
@@ -205,6 +275,8 @@ columns = {
     "color":"Color",
     "cosecha total":"Cosecha total",
     "venta total":"Venta total",
+    "cantidad comprada":"Cantidad comprada",
+    "venta total sin compras":"Venta total sin compras",
     "cosecha": "Cosecha original",
     "nueva cosecha": "Nuevo registro de cosecha",
     "diferencia cosecha": "Diferencia de cosecha",
@@ -285,3 +357,5 @@ if not selected_df.empty:
         st.metric(label="Cosecha total seleccionada", value=cosecha_total, delta=None)
     with cols[1]:
         st.metric(label="Venta total seleccionada", value=venta_total, delta=None)
+
+st.write(transacciones_df)
